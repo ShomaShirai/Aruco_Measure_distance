@@ -29,6 +29,7 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.directoryEntry1 = new System.DirectoryServices.DirectoryEntry();
             this.directoryEntry2 = new System.DirectoryServices.DirectoryEntry();
+            this.button2 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -47,6 +48,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.button2);
             this.tabPage1.Controls.Add(this.label5);
             this.tabPage1.Controls.Add(this.comboBox2);
             this.tabPage1.Controls.Add(this.label4);
@@ -63,7 +65,6 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "キャリブレーションモード";
             this.tabPage1.UseVisualStyleBackColor = true;
-            this.tabPage1.Click += new System.EventHandler(this.tabPage1_Click);
             // 
             // label5
             // 
@@ -112,7 +113,7 @@
             this.label2.Size = new System.Drawing.Size(106, 24);
             this.label2.TabIndex = 9;
             this.label2.Text = "撮影枚数";
-            this.label2.Click += new System.EventHandler(this.label2_Click);
+            //this.label2.Click += new System.EventHandler(this.label2_Click);
             // 
             // label1
             // 
@@ -145,8 +146,9 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(170, 84);
             this.button1.TabIndex = 4;
-            this.button1.Text = "開始/中断";
+            this.button1.Text = "start/end";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // pictureBox1
             // 
@@ -166,6 +168,15 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "計測モード";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(809, 548);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(181, 83);
+            this.button2.TabIndex = 14;
+            this.button2.Text = "保存";
+            this.button2.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -197,5 +208,6 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.ComboBox comboBox2;
+        private System.Windows.Forms.Button button2;
     }
 }
