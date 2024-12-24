@@ -20,17 +20,27 @@ namespace ss2409
         private DetectorParameters _detectorParameters;
         private int _captureNumber;
         private int _captureInterval;
+        private const float MARKER_SIZE = 0.02f;
 
         public Form1()
         {
             InitializeComponent();
             InitializeAruco();
+            this.FormClosing += Form1_FormClosing;
         }
 
         private void InitializeAruco()
         {
             _dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
             _detectorParameters = new DetectorParameters();
+            _detectorParameters.AdaptiveThreshConstant = 7;
+            _detectorParameters.MinMarkerPerimeterRate = 0.03;
+            _detectorParameters.MaxMarkerPerimeterRate = 4.0;
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            StopCamera();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -93,6 +103,7 @@ namespace ss2409
             {
                 _videoCapture.Release();
                 _videoCapture.Dispose();
+                _videoCapture = null;
             }
             Invoke(new Action(() =>
             {
@@ -104,11 +115,13 @@ namespace ss2409
             }));
         }
 
-        private void CaptureFrames()
+        private async void CaptureFrames()
         {
             int frameCount = 0;
             int capturedFrames = 0;
             var capturedImages = new List<Mat>();
+            var markerCorners = new List<Point2f[]>();
+            var markerIds = new List<int>();
 
             try
             {
@@ -120,61 +133,98 @@ namespace ss2409
                         {
                             frameCount++;
 
-                            if (frameCount % _captureInterval == 0)
+                            // Arucoマーカーの検出
+                            Point2f[][] corners;
+                            int[] ids;
+                            DetectMarkers(frame, out corners, out ids);
+
+                            if (ids != null && ids.Length > 0)
                             {
-                                capturedImages.Add(frame.Clone());
-                                var bitmap = BitmapConverter.ToBitmap(frame);
-                                UpdateUI(bitmap, $"撮影済み: {++capturedFrames}/{_captureNumber}枚").Wait();
+                                // マーカーを検出した場合、フレームに描画
+                                CvAruco.DrawDetectedMarkers(frame, corners, ids);
+
+                                // 指示棒の先端を計算して描画
+                                foreach (var corner in corners)
+                                {
+                                    var pointerTip = CalculatePointerTip(corner);
+                                    Cv2.Circle(frame, (OpenCvSharp.Point)pointerTip, 5, Scalar.Red, -1);
+                                }
+
+                                if (frameCount % _captureInterval == 0)
+                                {
+                                    capturedImages.Add(frame.Clone());
+                                    markerCorners.AddRange(corners);
+                                    markerIds.AddRange(ids);
+                                    var capturedBitmap = BitmapConverter.ToBitmap(frame);
+                                    await UpdateUI(capturedBitmap, $"撮影済み: {++capturedFrames}/{_captureNumber}枚");
+                                }
                             }
-                            else
-                            {
-                                var bitmap = BitmapConverter.ToBitmap(frame);
-                                UpdateUI(bitmap).Wait();
-                            }
+
+                            var previewBitmap = BitmapConverter.ToBitmap(frame);
+                            await UpdateUI(previewBitmap);
                         }
                     }
                 }
 
                 if (capturedImages.Count >= _captureNumber)
                 {
-                    using (var calibrationResult = PerformCalibration(capturedImages))
+                    using (var calibrationResult = PerformArucoCalibration(capturedImages, markerCorners, markerIds))
                     {
                         if (calibrationResult != null)
                         {
-                            var bitmap = BitmapConverter.ToBitmap(calibrationResult);
-                            UpdateUI(bitmap, "キャリブレーション完了").Wait();
+                            var calibrationBitmap = BitmapConverter.ToBitmap(calibrationResult);
+                            await UpdateUI(calibrationBitmap, "キャリブレーション完了");
                         }
                     }
                 }
 
-                // リソースの解放
+                // リソース解放
                 foreach (var img in capturedImages)
                 {
                     img.Dispose();
                 }
                 capturedImages.Clear();
 
-                // 継続的なプレビュー表示
+                // 継続的なプレビュー表示（キャリブレーション結果を適用）
                 while (_isCameraRunning)
                 {
                     using (var frame = new Mat())
                     {
                         if (_videoCapture.Read(frame) && !frame.Empty())
                         {
-                            var bitmap = BitmapConverter.ToBitmap(frame);
-                            UpdateUI(bitmap).Wait();
+                            // マーカー検出とポインタ先端の表示
+                            Point2f[][] corners;
+                            int[] ids;
+                            DetectMarkers(frame, out corners, out ids);
+
+                            if (ids != null && ids.Length > 0)
+                            {
+                                CvAruco.DrawDetectedMarkers(frame, corners, ids);
+                                foreach (var corner in corners)
+                                {
+                                    var pointerTip = CalculatePointerTip(corner);
+                                    Cv2.Circle(frame, (OpenCvSharp.Point)pointerTip, 5, Scalar.Red, -1);
+                                }
+                            }
+
+                            var previewBitmap = BitmapConverter.ToBitmap(frame);
+                            await UpdateUI(previewBitmap);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Invoke(new Action(() =>
+                await Task.Run(() =>
                 {
-                    MessageBox.Show($"エラーが発生しました: {ex.Message}");
-                    StopCamera();
-                }));
+                    Invoke(new Action(() =>
+                    {
+                        MessageBox.Show($"エラーが発生しました: {ex.Message}");
+                        StopCamera();
+                    }));
+                });
             }
+
         }
 
         private async Task UpdateUI(Bitmap bitmap, string labelText = null)
@@ -202,67 +252,102 @@ namespace ss2409
             });
         }
 
-        private Mat PerformCalibration(List<Mat> capturedImages)
+        private void DetectMarkers(Mat frame, out Point2f[][] corners, out int[] ids)
+        {
+            using (var gray = new Mat())
+            {
+                Cv2.CvtColor(frame, gray, ColorConversionCodes.BGR2GRAY);
+                Point2f[][] rejectedImgPoints;
+                CvAruco.DetectMarkers(gray, _dictionary, out corners, out ids, _detectorParameters, out rejectedImgPoints);
+            }
+        }
+
+        private Point2f CalculatePointerTip(Point2f[] markerCorners)
+        {
+            // マーカーの中心を計算
+            var centerX = markerCorners.Average(p => p.X);
+            var centerY = markerCorners.Average(p => p.Y);
+
+            // マーカーの向きを計算（上辺の中点から下辺の中点への方向）
+            var topMidPoint = new Point2f(
+                (markerCorners[0].X + markerCorners[1].X) / 2,
+                (markerCorners[0].Y + markerCorners[1].Y) / 2
+            );
+            var bottomMidPoint = new Point2f(
+                (markerCorners[2].X + markerCorners[3].X) / 2,
+                (markerCorners[2].Y + markerCorners[3].Y) / 2
+            );
+
+            // 方向ベクトルを計算
+            var dirX = bottomMidPoint.X - topMidPoint.X;
+            var dirY = bottomMidPoint.Y - topMidPoint.Y;
+
+            // ベクトルを正規化して指示棒の長さ分延長
+            float length = (float)Math.Sqrt(dirX * dirX + dirY * dirY);
+            float pointerLength = length * 2; // 指示棒の長さをマーカーサイズの2倍と仮定
+
+            return new Point2f(
+                centerX + (dirX / length) * pointerLength,
+                centerY + (dirY / length) * pointerLength
+            );
+        }
+
+        private Mat PerformArucoCalibration(List<Mat> images, List<Point2f[]> allCorners, List<int> allIds)
         {
             try
             {
-                // チェスボードのパターンサイズ（例: 9x6）
-                var patternSize = new OpenCvSharp.Size(1, 1);
-                var squareSize = 2.0f; // チェスボードの1マスのサイズ（単位：任意）
+                var objPoints = new List<Mat>();
+                var imgPoints = new List<Mat>();
 
-                var objectPoints = new List<Mat>();
-                var imagePoints = new List<Mat>();
-                var objectPoint = new List<Point3f>();
-
-                // オブジェクトポイントの準備
-                for (int i = 0; i < patternSize.Height; i++)
+                // 3D座標を生成（マーカーの四隅）
+                var markerObjPoints = new Point3f[]
                 {
-                    for (int j = 0; j < patternSize.Width; j++)
-                    {
-                        objectPoint.Add(new Point3f(j * squareSize, i * squareSize, 0));
-                    }
+                    new Point3f(-MARKER_SIZE/2f, MARKER_SIZE/2f, 0),
+                    new Point3f(MARKER_SIZE/2f, MARKER_SIZE/2f, 0),
+                    new Point3f(MARKER_SIZE/2f, -MARKER_SIZE/2f, 0),
+                    new Point3f(-MARKER_SIZE/2f, -MARKER_SIZE/2f, 0)
+                };
+
+                // 検出された各マーカーについて3D-2D対応点を収集
+                for (int i = 0; i < allIds.Count; i++)
+                {
+                    var objPointMat = new Mat(markerObjPoints.Length, 1, MatType.CV_32FC3);
+                    objPointMat.SetArray(markerObjPoints);
+                    objPoints.Add(objPointMat);
+
+                    var imgPointMat = new Mat(allCorners[i].Length, 1, MatType.CV_32FC2);
+                    imgPointMat.SetArray(allCorners[i]);
+                    imgPoints.Add(imgPointMat);
                 }
 
-                foreach (var image in capturedImages)
-                {
-                    using (var gray = new Mat())
-                    {
-                        Cv2.CvtColor(image, gray, ColorConversionCodes.BGR2GRAY);
-
-                        if (Cv2.FindChessboardCorners(gray, patternSize, out Point2f[] corners))
-                        {
-                            var criteria = new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.MaxIter, 30, 0.001);
-                            Cv2.CornerSubPix(gray, corners, new OpenCvSharp.Size(11, 11), new OpenCvSharp.Size(-1, -1), criteria);
-
-                            imagePoints.Add(Mat.FromArray(corners));
-                            objectPoints.Add(Mat.FromArray(objectPoint.ToArray()));
-                        }
-                    }
-                }
-
-                if (objectPoints.Count > 0)
+                if (objPoints.Count > 0)
                 {
                     var cameraMatrix = new Mat();
                     var distCoeffs = new Mat();
                     Mat[] rvecs, tvecs;
 
-                    OpenCvSharp.Size imageSize = capturedImages[0].Size();
-                    double repError = Cv2.CalibrateCamera(objectPoints, imagePoints, imageSize,
-                        cameraMatrix, distCoeffs, out rvecs, out tvecs, CalibrationFlags.None);
+                    OpenCvSharp.Size imageSize = images[0].Size();
+                    double repError = Cv2.CalibrateCamera(
+                        objPoints,
+                        imgPoints,
+                        imageSize,
+                        cameraMatrix,
+                        distCoeffs,
+                        out rvecs,
+                        out tvecs,
+                        CalibrationFlags.RationalModel
+                    );
 
                     SaveCalibrationResults(cameraMatrix, distCoeffs);
                     MessageBox.Show($"キャリブレーション完了！\n再投影誤差: {repError:F6}");
 
                     // 最後の画像を補正して返す
                     var undistorted = new Mat();
-                    Cv2.Undistort(capturedImages.Last(), undistorted, cameraMatrix, distCoeffs);
+                    Cv2.Undistort(images.Last(), undistorted, cameraMatrix, distCoeffs);
                     return undistorted;
                 }
-                else
-                {
-                    MessageBox.Show("チェスボードパターンが検出できませんでした。");
-                    return null;
-                }
+
+                return null;
             }
             catch (Exception ex)
             {
