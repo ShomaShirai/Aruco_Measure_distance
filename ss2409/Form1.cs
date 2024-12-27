@@ -27,6 +27,8 @@ namespace ss2409
             InitializeComponent();
             InitializeAruco();
             this.FormClosing += Form1_FormClosing;
+            this.Text = "Arucoマーカ GUI";
+            this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2409\\ss2409\\favicon.ico");
         }
 
         private void InitializeAruco()
