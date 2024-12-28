@@ -79,17 +79,13 @@ namespace ss2409
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if(_capturedImages.Count == 0)
-            {
-                MessageBox.Show("画像が取得されていません");
-                return;
-            }
-            if (string.IsNullOrEmpty(textBox1.Text))
+            if (string.IsNullOrEmpty(textBox2.Text))
             {
                 MessageBox.Show("ファイル名を入力してください");
                 return;
             }
             SaveCalibrationResults(_cameraMatrix, _distCoeffs);
+            MessageBox.Show($"{textBox2.Text}.csvファイルに保存が完了しました");
         }
 
         private void StartCamera()
@@ -295,7 +291,7 @@ namespace ss2409
         {
             try
             {
-                string filePath = textBox1.Text + ".csv";
+                string filePath = textBox2.Text + ".csv";
                 using (var writer = new StreamWriter(filePath))
                 {
                     writer.WriteLine("Camera Matrix:");
