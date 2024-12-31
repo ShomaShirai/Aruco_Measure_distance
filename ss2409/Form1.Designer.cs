@@ -37,8 +37,10 @@
             this.button1 = new System.Windows.Forms.Button();
             this.label6 = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.button_select_file = new System.Windows.Forms.Button();
             this.directoryEntry1 = new System.DirectoryServices.DirectoryEntry();
             this.directoryEntry2 = new System.DirectoryServices.DirectoryEntry();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -111,9 +113,9 @@
             // button2
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(809, 565);
+            this.button2.Location = new System.Drawing.Point(814, 565);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(181, 83);
+            this.button2.Size = new System.Drawing.Size(169, 76);
             this.button2.TabIndex = 14;
             this.button2.Text = "保存";
             this.button2.UseVisualStyleBackColor = true;
@@ -205,7 +207,7 @@
             this.button_start_end.Name = "button_start_end";
             this.button_start_end.Size = new System.Drawing.Size(170, 84);
             this.button_start_end.TabIndex = 4;
-            this.button_start_end.Text = "start/end";
+            this.button_start_end.Text = "開始";
             this.button_start_end.UseVisualStyleBackColor = true;
             this.button_start_end.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -231,6 +233,7 @@
             this.tabPage2.Controls.Add(this.button1);
             this.tabPage2.Controls.Add(this.label6);
             this.tabPage2.Controls.Add(this.pictureBox2);
+            this.tabPage2.Controls.Add(this.button_select_file);
             this.tabPage2.Location = new System.Drawing.Point(4, 34);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -238,6 +241,7 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "計測モード";
             this.tabPage2.UseVisualStyleBackColor = true;
+            this.tabPage2.Click += new System.EventHandler(this.tabPage2_Click);
             // 
             // label8
             // 
@@ -266,9 +270,9 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(842, 355);
+            this.button1.Location = new System.Drawing.Point(832, 261);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(106, 44);
+            this.button1.Size = new System.Drawing.Size(142, 55);
             this.button1.TabIndex = 2;
             this.button1.Text = "計測";
             this.button1.UseVisualStyleBackColor = true;
@@ -290,6 +294,20 @@
             this.pictureBox2.Size = new System.Drawing.Size(754, 586);
             this.pictureBox2.TabIndex = 0;
             this.pictureBox2.TabStop = false;
+            // 
+            // button_select_file
+            // 
+            this.button_select_file.Location = new System.Drawing.Point(832, 133);
+            this.button_select_file.Name = "button_select_file";
+            this.button_select_file.Size = new System.Drawing.Size(142, 62);
+            this.button_select_file.TabIndex = 6;
+            this.button_select_file.Text = "データ読込";
+            this.button_select_file.UseVisualStyleBackColor = true;
+            this.button_select_file.Click += new System.EventHandler(this.button_select_file_Click);
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
             // 
             // Form1
             // 
@@ -334,5 +352,7 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Button button_select_file;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
     }
 }

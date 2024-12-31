@@ -19,10 +19,15 @@ namespace ss2409
         private int _captureNumber;
         private int _captureInterval;
         private List<Mat> _capturedImages = new List<Mat>(); //キャプチャーした画像を保持する
+        private bool _isCalibrating = false; //キャリブレーション中かどうかのフラグ
 
         // カメラキャリブレーションパラメータを単一のMatとして初期化
         private Mat _cameraMatrix = new Mat(); //カメラ行列を保持
         private Mat _distCoeffs = new Mat(); //歪み係数を保持
+
+        // csvファイルから読み取ったカメラ行列と歪み係数
+        private Mat _cameraMatrixFromFile = new Mat();
+        private Mat _distCoeffsFromFile = new Mat();
 
         // チェスボードのパラメータ
         private const int _CHESSBOARD_WIDTH = 9;
@@ -73,7 +78,7 @@ namespace ss2409
                     return;
                 }
                 StartCamera();
-                button_start_end.Text = "停止";
+                button_start_end.Text = "終了";
             }
         }
 
@@ -127,6 +132,7 @@ namespace ss2409
             }));
         }
 
+        // キャリブレーションのためにフレームをキャプチャーする関数
         private async void CaptureFrames()
         {
             int frameCount = 0;
@@ -316,5 +322,139 @@ namespace ss2409
                 MessageBox.Show($"キャリブレーション結果の保存中にエラーが発生しました: {ex.Message}");
             }
         }
+
+        private void tabPage2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        // CSVファイルを読み込んでカメラ行列と歪み係数を設定
+        private void button_select_file_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                string selectedFilePath = openFileDialog1.FileName;
+                try
+                {
+                    // CSVファイルを読み込む
+                    using (var reader = new StreamReader(selectedFilePath))
+                    {
+                        // カメラ行列の読み込み
+                        string header = reader.ReadLine(); // "cameramatrix" を読み飛ばす
+
+                        _cameraMatrixFromFile = Mat.Zeros(3, 3, MatType.CV_64FC1);
+                        for (int i = 0; i < 3; i++)
+                        {
+                            string[] values = reader.ReadLine().TrimEnd(',').Split(',');
+                            for (int j = 0; j < 3; j++)
+                            {
+                                _cameraMatrixFromFile.Set<double>(i, j, double.Parse(values[j]));
+                            }
+                        }
+
+                        reader.ReadLine(); // 改行を読み飛ばす
+                        reader.ReadLine(); // "diffcoffs" を読み飛ばす
+
+                        // 歪み係数の読み込み
+                        string[] distValues = reader.ReadLine().TrimEnd(',').Split(',');
+                        _distCoeffsFromFile = Mat.Zeros(5, 1, MatType.CV_64FC1);
+                        for (int i = 0; i < distValues.Length; i++)
+                        {
+                            _distCoeffsFromFile.Set<double>(i, 0, double.Parse(distValues[i]));
+                        }
+
+                        Console.WriteLine(_distCoeffsFromFile);
+                    }
+
+                    MessageBox.Show("カメラパラメータの読み込みが完了しました。");
+
+                    // カメラが起動中の場合は、歪み補正処理を開始
+                    if (_isCameraRunning)
+                    {
+                        // 既存のカメラ行列と歪み係数を更新
+                        _cameraMatrix = _cameraMatrixFromFile.Clone();
+                        _distCoeffs = _distCoeffsFromFile.Clone();
+                    }
+                    StartCameraWithCalibration();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"ファイルの読み込み中にエラーが発生しました: {ex.Message}");
+                }
+            }
+        }
+
+        private void StartCameraWithCalibration()
+        {
+            try
+            {
+                _videoCapture = new VideoCapture(0);
+                if (!_videoCapture.IsOpened())
+                {
+                    MessageBox.Show("カメラを開けませんでした。");
+                    return;
+                }
+                _isCameraRunning = true;
+                Task.Run(() => CaptureFramesWithCalibration());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"カメラの起動中にエラーが発生しました: {ex.Message}");
+            }
+        }
+
+        private async void CaptureFramesWithCalibration()
+        {
+            try
+            {
+                while (_isCameraRunning)
+                {
+                    using (var frame = new Mat())
+                    {
+                        if (_videoCapture.Read(frame) && !frame.Empty())
+                        {
+                            var displayFrame = frame.Clone();
+                            Cv2.Undistort(frame, displayFrame, _cameraMatrixFromFile, _distCoeffsFromFile);
+                            await UpdateUIWithCalibration(BitmapConverter.ToBitmap(displayFrame));
+                            displayFrame.Dispose();
+                        }
+                    }
+                    await Task.Delay(30);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Task.Run(() =>
+                {
+                    Invoke(new Action(() =>
+                    {
+                        MessageBox.Show($"エラーが発生しました: {ex.Message}");
+                        StopCamera();
+                    }));
+                });
+            }
+        }
+
+        private async Task UpdateUIWithCalibration(Bitmap bitmap)
+        {
+            await Task.Run(() =>
+            {
+                Invoke(new Action(() =>
+                {
+                    if (pictureBox2.Image != null)
+                    {
+                        var oldImage = pictureBox2.Image;
+                        pictureBox2.Image = bitmap;
+                        oldImage.Dispose();
+                    }
+                    else
+                    {
+                        pictureBox2.Image = bitmap;
+                    }
+                }));
+            });
+        }
+
+
     }
 }
