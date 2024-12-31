@@ -17,6 +17,9 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.label10 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.label9 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
             this.label5 = new System.Windows.Forms.Label();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
@@ -36,9 +39,6 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.directoryEntry1 = new System.DirectoryServices.DirectoryEntry();
             this.directoryEntry2 = new System.DirectoryServices.DirectoryEntry();
-            this.label9 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.label10 = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -82,6 +82,31 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "キャリブレーションモード";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(995, 515);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(49, 24);
+            this.label10.TabIndex = 17;
+            this.label10.Text = ".csv";
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(809, 514);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(181, 31);
+            this.textBox2.TabIndex = 16;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(810, 471);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(125, 24);
+            this.label9.TabIndex = 15;
+            this.label9.Text = "保存ファイル";
             // 
             // button2
             // 
@@ -153,7 +178,7 @@
             this.label1.Font = new System.Drawing.Font("MS UI Gothic", 15F);
             this.label1.Location = new System.Drawing.Point(42, 20);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(992, 45);
+            this.label1.Size = new System.Drawing.Size(661, 30);
             this.label1.TabIndex = 8;
             this.label1.Text = "チェスボードの準備ができたらstartボタンを押してください";
             // 
@@ -217,7 +242,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(979, 348);
+            this.label8.Location = new System.Drawing.Point(979, 490);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(46, 24);
             this.label8.TabIndex = 5;
@@ -225,7 +250,7 @@
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(848, 345);
+            this.textBox1.Location = new System.Drawing.Point(848, 487);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 31);
             this.textBox1.TabIndex = 4;
@@ -233,7 +258,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(842, 282);
+            this.label7.Location = new System.Drawing.Point(842, 424);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(106, 24);
             this.label7.TabIndex = 3;
@@ -241,7 +266,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(848, 139);
+            this.button1.Location = new System.Drawing.Point(842, 355);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(106, 44);
             this.button1.TabIndex = 2;
@@ -265,31 +290,6 @@
             this.pictureBox2.Size = new System.Drawing.Size(754, 586);
             this.pictureBox2.TabIndex = 0;
             this.pictureBox2.TabStop = false;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(810, 471);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(125, 24);
-            this.label9.TabIndex = 15;
-            this.label9.Text = "保存ファイル";
-            // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(809, 514);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(181, 31);
-            this.textBox2.TabIndex = 16;
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(995, 515);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(49, 24);
-            this.label10.TabIndex = 17;
-            this.label10.Text = ".csv";
             // 
             // Form1
             // 

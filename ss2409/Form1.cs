@@ -85,7 +85,7 @@ namespace ss2409
                 return;
             }
             SaveCalibrationResults(_cameraMatrix, _distCoeffs);
-            MessageBox.Show($"{textBox2.Text}.csvファイルに保存が完了しました");
+            MessageBox.Show($"{textBox2.Text}.csvファイルに保存が完了しました\n次にキャリブレーションを行いましょう!");
         }
 
         private void StartCamera()
