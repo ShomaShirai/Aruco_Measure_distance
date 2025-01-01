@@ -288,9 +288,9 @@
             this.label6.Font = new System.Drawing.Font("MS UI Gothic", 15F);
             this.label6.Location = new System.Drawing.Point(44, 28);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(709, 30);
+            this.label6.Size = new System.Drawing.Size(750, 30);
             this.label6.TabIndex = 1;
-            this.label6.Text = "[一点目]指示棒を対象に当てて計測ボタンを押してください";
+            this.label6.Text = "[データ読込]ボタンからキャリブレーションデータを取得してください\r\n";
             // 
             // pictureBox2
             // 
