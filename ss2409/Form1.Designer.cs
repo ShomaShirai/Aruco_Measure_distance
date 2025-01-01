@@ -280,6 +280,7 @@
             this.button_Measure.TabIndex = 2;
             this.button_Measure.Text = "計測";
             this.button_Measure.UseVisualStyleBackColor = true;
+            this.button_Measure.Click += new System.EventHandler(this.button_Measure_Click);
             // 
             // label6
             // 

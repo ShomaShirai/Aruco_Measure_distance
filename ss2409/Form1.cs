@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using OpenCvSharp;
 using OpenCvSharp.Aruco;
 using OpenCvSharp.Extensions;
+using System.Collections;
 
 namespace ss2409
 {
@@ -37,7 +38,7 @@ namespace ss2409
         private List<Point3d> _measurementPoints = new List<Point3d>();
         private bool _isMeasuring = false;
         private const float MARKER_SIZE = 0.02f; // マーカーのサイズ 2cm
-        private Dictionary dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
+        private Dictionary _dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
 
         public Form1()
         {
@@ -268,7 +269,7 @@ namespace ss2409
                     // 歪み係数の初期化（5つのパラメータ用）
                     _distCoeffs = Mat.Zeros(5, 1, MatType.CV_64FC1);
 
-                    Mat[] rvecs, tvecs;
+                    Mat[] rvecsChessboard, tvecsChessboard;
 
                     double repError = Cv2.CalibrateCamera(
                         objPoints,
@@ -276,23 +277,15 @@ namespace ss2409
                         imageSize,
                         _cameraMatrix,
                         _distCoeffs,
-                        out rvecs,
-                        out tvecs,
+                        out rvecsChessboard,
+                        out tvecsChessboard,
                         CalibrationFlags.RationalModel
                     );
 
-                    for (int i = 0; i < rvecs.Length; i++)
-                    {
-                        Console.WriteLine(rvecs);
-                    }
-                    for(int i=0; i<tvecs.Length; i++)
-                    {
-                        Console.WriteLine(tvecs);
-                    }
                     MessageBox.Show($"キャリブレーション完了！\n再投影誤差: {repError:F6}");
 
                     // リソースの解放
-                    foreach (var mat in objPoints.Concat(imgPoints).Concat(rvecs).Concat(tvecs))
+                    foreach (var mat in objPoints.Concat(imgPoints).Concat(rvecsChessboard).Concat(tvecsChessboard))
                     {
                         mat?.Dispose();
                     }
@@ -470,197 +463,230 @@ namespace ss2409
         //指示棒の計測を開始するボタン
         private void button_Measure_Click(object sender, EventArgs e)
         {
-            //if (_isMeasuring)
-            //{
-            //    StopMeasurement();
-            //    button_Measure.Text = "計測開始";
-            //}
-            //else
-            //{
-            //    StartMeasurement();
-            //    button_Measure.Text = "計測終了";
-            //}
+            if (_isMeasuring)
+            {
+                StopMeasurement();
+                button_Measure.Text = "計測開始";
+            }
+            else
+            {
+                StartMeasurement();
+                button_Measure.Text = "計測終了";
+            }
         }
 
-        //private void StartMeasurement()
-        //{
-        //    try
-        //    {
-        //        _videoCapture = new VideoCapture(0);
-        //        if (!_videoCapture.IsOpened())
-        //        {
-        //            MessageBox.Show("カメラを開けませんでした。");
-        //            return;
-        //        }
-        //        _isMeasuring = true;
-        //        _measurementPoints.Clear();
-        //        Task.Run(() => MeasurementFrameCapture());
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"計測開始時にエラーが発生しました: {ex.Message}");
-        //    }
-        //}
+        private void StartMeasurement()
+        {
+            try
+            {
+                _videoCapture = new VideoCapture(0);
+                if (!_videoCapture.IsOpened())
+                {
+                    MessageBox.Show("カメラを開けませんでした。");
+                    return;
+                }
+                _isMeasuring = true;
+                _measurementPoints.Clear();
+                Task.Run(() => MeasurementFrameCapture());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"計測開始時にエラーが発生しました: {ex.Message}");
+            }
+        }
 
-        //private void StopMeasurement()
-        //{
-        //    _isMeasuring = false;
-        //    if (_videoCapture != null && !_videoCapture.IsDisposed)
-        //    {
-        //        _videoCapture.Release();
-        //        _videoCapture.Dispose();
-        //        _videoCapture = null;
-        //    }
-        //}
+        private void StopMeasurement()
+        {
+            _isMeasuring = false;
+            if (_videoCapture != null && !_videoCapture.IsDisposed)
+            {
+                _videoCapture.Release();
+                _videoCapture.Dispose();
+                _videoCapture = null;
+            }
+        }
 
-        //private async void MeasurementFrameCapture()
-        //{
-        //    try
-        //    {
-        //        while (_isMeasuring)
-        //        {
-        //            using (var frame = new Mat())
-        //            {
-        //                if (_videoCapture.Read(frame) && !frame.Empty())
-        //                {
-        //                    var displayFrame = frame.Clone();
+        private async void MeasurementFrameCapture()
+        {
+            try
+            {
+                while (_isMeasuring)
+                {
+                    using (var frame = new Mat())
+                    {
+                        if (_videoCapture.Read(frame) && !frame.Empty())
+                        {
+                            var displayFrame = frame.Clone();
 
-        //                    // 歪み補正を適用
-        //                    Mat undistorted = new Mat();
-        //                    Cv2.Undistort(frame, undistorted, _cameraMatrixFromFile, _distCoeffsFromFile);
+                            // 歪み補正を適用
+                            Mat undistorted = new Mat();
+                            Cv2.Undistort(frame, undistorted, _cameraMatrixFromFile, _distCoeffsFromFile);
 
-        //                    // Arucoマーカーの検出
-        //                    Point2f[][] corners;
-        //                    int[] ids;
-        //                    DetectorParameters detectorParams = DetectorParameters.Create();
-        //                    CvAruco.DetectMarkers(undistorted, dictionary, out corners, out ids, detectorParams);
+                            // Arucoマーカーの検出
+                            Point2f[][] corners;
+                            int[] ids;
+                            DetectorParameters detectorParams = new DetectorParameters();
+                            CvAruco.DetectMarkers(undistorted, _dictionary, out corners, out ids, detectorParams, out _);
 
-        //                    if (ids != null && ids.Length > 0)
-        //                    {
-        //                        // マーカーの描画
-        //                        CvAruco.DrawDetectedMarkers(displayFrame, corners, ids);
+                            if (ids != null && ids.Length > 0)
+                            {
+                                // マーカーの描画
+                                CvAruco.DrawDetectedMarkers(displayFrame, corners, ids);
 
-        //                        CvAruco.EstimatePoseSingleMarkers(
-        //                            corners,
-        //                            MARKER_SIZE,
-        //                            _cameraMatrixFromFile,
-        //                            _distCoeffsFromFile,
-        //                            rvecs,
-        //                            tvecs
-        //                        );
+                                // 並進ベクトルと回転ベクトルを定義
+                                Mat rvecs = new Mat();
+                                Mat tvecs = new Mat();
 
-        //                        // マーカーごとの処理
-        //                        for (int i = 0; i < ids.Length; i++)
-        //                        {
-        //                            // マーカーの3D位置を取得
-        //                            Point3d markerPosition = new Point3d(
-        //                                tvecs[i].At<double>(0),
-        //                                tvecs[i].At<double>(1),
-        //                                tvecs[i].At<double>(2)
-        //                            );
+                                CvAruco.EstimatePoseSingleMarkers(
+                                    corners,
+                                    MARKER_SIZE,
+                                    _cameraMatrixFromFile,
+                                    _distCoeffsFromFile,
+                                    rvecs,
+                                    tvecs
+                                );
 
-        //                            // マーカーの先端位置を計算（マーカーの中心から少し前方）
-        //                            Mat rotationMatrix = new Mat();
-        //                            Cv2.Rodrigues(rvecs[i], rotationMatrix);
+                                // マーカーごとの処理
+                                if (ids != null && ids.Length > 0)
+                                {
+                                    // マーカーの描画
+                                    CvAruco.DrawDetectedMarkers(displayFrame, corners, ids);
 
-        //                            // マーカーの前方方向ベクトル（z軸方向に0.05m）
-        //                            Point3d tipOffset = new Point3d(
-        //                                rotationMatrix.At<double>(0, 2) * 0.05,
-        //                                rotationMatrix.At<double>(1, 2) * 0.05,
-        //                                rotationMatrix.At<double>(2, 2) * 0.05
-        //                            );
+                                    // 並進ベクトルと回転ベクトルを定義
+                                    Mat rvecsAruco = new Mat();
+                                    Mat tvecsAruco = new Mat();
 
-        //                            Point3d tipPosition = new Point3d(
-        //                                markerPosition.X + tipOffset.X,
-        //                                markerPosition.Y + tipOffset.Y,
-        //                                markerPosition.Z + tipOffset.Z
-        //                            );
+                                    CvAruco.EstimatePoseSingleMarkers(
+                                        corners,
+                                        MARKER_SIZE,
+                                        _cameraMatrixFromFile,
+                                        _distCoeffsFromFile,
+                                        rvecsAruco,
+                                        tvecsAruco
+                                    );
 
-        //                            // 点の記録（左クリック検出時）
-        //                            if (MouseButtons == MouseButtons.Left && _measurementPoints.Count < 2)
-        //                            {
-        //                                _measurementPoints.Add(tipPosition);
-        //                                System.Media.SystemSounds.Beep.Play();
-        //                            }
+                                    // rvecs と tvecs を配列として取得
+                                    Vec3d[] rvecArray = new Vec3d[ids.Length];
+                                    Vec3d[] tvecArray = new Vec3d[ids.Length];
+                                    rvecsAruco.GetArray(out rvecArray);
+                                    tvecsAruco.GetArray(out tvecArray);
 
-        //                            rotationMatrix.Dispose();
-        //                        }
+                                    // マーカーごとの処理
+                                    for (int i = 0; i < ids.Length; i++)
+                                    {
+                                        // マーカーの3D位置を取得
+                                        Point3d markerPosition = new Point3d(
+                                            tvecArray[i].Item0,
+                                            tvecArray[i].Item1,
+                                            tvecArray[i].Item2
+                                        );
 
-        //                        // リソースの解放
-        //                        foreach (var mat in rvecs.Concat(tvecs))
-        //                        {
-        //                            mat?.Dispose();
-        //                        }
-        //                    }
+                                        // マーカーの先端位置を計算（マーカーの中心から少し前方）
+                                        Mat rotationMatrix = new Mat();
+                                        Cv2.Rodrigues(rvecArray[i], rotationMatrix);
 
-        //                    // 計測点の描画と距離の計算
-        //                    if (_measurementPoints.Count > 0)
-        //                    {
-        //                        foreach (var point in _measurementPoints)
-        //                        {
-        //                            // 3D点を2D画像座標に投影
-        //                            Point2d imagePoint = ProjectPoint(point, _cameraMatrixFromFile);
-        //                            Cv2.Circle(displayFrame, (OpenCvSharp.Point)imagePoint, 5, Scalar.Red, -1);
-        //                        }
+                                        // マーカーの前方方向ベクトル（z軸方向に0.05m）
+                                        Point3d tipOffset = new Point3d(
+                                            rotationMatrix.At<double>(0, 2) * 0.05,
+                                            rotationMatrix.At<double>(1, 2) * 0.05,
+                                            rotationMatrix.At<double>(2, 2) * 0.05
+                                        );
 
-        //                        if (_measurementPoints.Count == 2)
-        //                        {
-        //                            // 距離の計算と表示
-        //                            double distance = CalculateDistance(_measurementPoints[0], _measurementPoints[1]);
-        //                            Cv2.PutText(
-        //                                displayFrame,
-        //                                $"Distance: {distance:F3}m",
-        //                                new OpenCvSharp.Point(10, 30),
-        //                                HersheyFonts.HersheySimplex,
-        //                                1.0,
-        //                                Scalar.Red,
-        //                                2
-        //                            );
-        //                        }
-        //                    }
+                                        Point3d tipPosition = new Point3d(
+                                            markerPosition.X + tipOffset.X,
+                                            markerPosition.Y + tipOffset.Y,
+                                            markerPosition.Z + tipOffset.Z
+                                        );
 
-        //                    await UpdateUIWithCalibration(BitmapConverter.ToBitmap(displayFrame));
-        //                    displayFrame.Dispose();
-        //                    undistorted.Dispose();
-        //                }
-        //            }
-        //            await Task.Delay(30);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        await Task.Run(() =>
-        //        {
-        //            Invoke(new Action(() =>
-        //            {
-        //                MessageBox.Show($"計測中にエラーが発生しました: {ex.Message}");
-        //                StopMeasurement();
-        //            }));
-        //        });
-        //    }
-        //}
+                                        // 点の記録（左クリック検出時）
+                                        if (MouseButtons == MouseButtons.Left && _measurementPoints.Count < 2)
+                                        {
+                                            _measurementPoints.Add(tipPosition);
+                                            System.Media.SystemSounds.Beep.Play();
+                                        }
 
-        //private Point2d ProjectPoint(Point3d point3d, Mat cameraMatrix)
-        //{
-        //    double fx = cameraMatrix.At<double>(0, 0);
-        //    double fy = cameraMatrix.At<double>(1, 1);
-        //    double cx = cameraMatrix.At<double>(0, 2);
-        //    double cy = cameraMatrix.At<double>(1, 2);
+                                        rotationMatrix.Dispose();
+                                    }
 
-        //    return new Point2d(
-        //        (point3d.X * fx / point3d.Z) + cx,
-        //        (point3d.Y * fy / point3d.Z) + cy
-        //    );
-        //}
+                                    // リソースの解放
+                                    rvecsAruco.Dispose();
+                                    tvecsAruco.Dispose();
+                                }
 
-        //private double CalculateDistance(Point3d p1, Point3d p2)
-        //{
-        //    return Math.Sqrt(
-        //        Math.Pow(p2.X - p1.X, 2) +
-        //        Math.Pow(p2.Y - p1.Y, 2) +
-        //        Math.Pow(p2.Z - p1.Z, 2)
-        //    );
-        //}
+
+                                // リソースの解放
+                                rvecs.Dispose();
+                                tvecs.Dispose();
+                            }
+
+                            // 計測点の描画と距離の計算
+                            if (_measurementPoints.Count > 0)
+                            {
+                                foreach (var point in _measurementPoints)
+                                {
+                                    // 3D点を2D画像座標に投影
+                                    Point2d imagePoint = ProjectPoint(point, _cameraMatrixFromFile);
+                                    Cv2.Circle(displayFrame, (OpenCvSharp.Point)imagePoint, 5, Scalar.Red, -1);
+                                }
+
+                                if (_measurementPoints.Count == 2)
+                                {
+                                    // 距離の計算と表示
+                                    double distance = CalculateDistance(_measurementPoints[0], _measurementPoints[1]);
+                                    Cv2.PutText(
+                                        displayFrame,
+                                        $"Distance: {distance:F3}m",
+                                        new OpenCvSharp.Point(10, 30),
+                                        HersheyFonts.HersheySimplex,
+                                        1.0,
+                                        Scalar.Red,
+                                        2
+                                    );
+                                }
+                            }
+
+                            await UpdateUIWithCalibration(BitmapConverter.ToBitmap(displayFrame));
+                            displayFrame.Dispose();
+                            undistorted.Dispose();
+                        }
+                    }
+                    await Task.Delay(30);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Task.Run(() =>
+                {
+                    Invoke(new Action(() =>
+                    {
+                        MessageBox.Show($"計測中にエラーが発生しました: {ex.Message}");
+                        StopMeasurement();
+                    }));
+                });
+            }
+        }
+
+        private Point2d ProjectPoint(Point3d point3d, Mat cameraMatrix)
+        {
+            double fx = cameraMatrix.At<double>(0, 0);
+            double fy = cameraMatrix.At<double>(1, 1);
+            double cx = cameraMatrix.At<double>(0, 2);
+            double cy = cameraMatrix.At<double>(1, 2);
+
+            return new Point2d(
+                (point3d.X * fx / point3d.Z) + cx,
+                (point3d.Y * fy / point3d.Z) + cy
+            );
+        }
+
+        private double CalculateDistance(Point3d p1, Point3d p2)
+        {
+            return Math.Sqrt(
+                Math.Pow(p2.X - p1.X, 2) +
+                Math.Pow(p2.Y - p1.Y, 2) +
+                Math.Pow(p2.Z - p1.Z, 2)
+            );
+        }
 
     }
 }
