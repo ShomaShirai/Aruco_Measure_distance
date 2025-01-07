@@ -497,6 +497,7 @@ namespace ss2409
                                     tvecsAruco
                                 );
 
+                                // 並進ベクトルと回転ベクトルを代入
                                 Vec3d[] rvecArray = new Vec3d[1];
                                 Vec3d[] tvecArray = new Vec3d[1];
                                 rvecsAruco.GetArray(out rvecArray);
@@ -509,14 +510,15 @@ namespace ss2409
                                     tvecArray[0].Item2
                                 );
 
+                                // ロドリゲスの回転行列を計算
                                 Mat rotationMatrix = new Mat();
                                 Cv2.Rodrigues(rvecArray[0], rotationMatrix);
 
                                 Point3d tipOffset = new Point3d(
-                                    rotationMatrix.At<double>(0, 2) * 0.05,
-                                    rotationMatrix.At<double>(1, 2) * 0.05,
-                                    rotationMatrix.At<double>(2, 2) * 0.05
-                                );
+                                     rotationMatrix.At<double>(0, 2) * 0.1,
+                                     rotationMatrix.At<double>(1, 2) * 0.1,
+                                     rotationMatrix.At<double>(2, 2) * 0.1
+                                 );
 
                                 _latestMarkerPosition = new Point3d(
                                     markerPosition.X + tipOffset.X,
