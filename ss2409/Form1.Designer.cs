@@ -113,7 +113,7 @@
             // button_reserve
             // 
             this.button_reserve.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button_reserve.Location = new System.Drawing.Point(814, 565);
+            this.button_reserve.Location = new System.Drawing.Point(814, 572);
             this.button_reserve.Name = "button_reserve";
             this.button_reserve.Size = new System.Drawing.Size(169, 76);
             this.button_reserve.TabIndex = 14;
@@ -217,10 +217,10 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox1.Location = new System.Drawing.Point(59, 77);
+            this.pictureBox1.Location = new System.Drawing.Point(39, 77);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(712, 572);
+            this.pictureBox1.Size = new System.Drawing.Size(732, 583);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 1;
             this.pictureBox1.TabStop = false;
@@ -256,9 +256,9 @@
             // textBox1
             // 
             this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox1.Location = new System.Drawing.Point(848, 487);
+            this.textBox1.Location = new System.Drawing.Point(846, 487);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(100, 31);
+            this.textBox1.Size = new System.Drawing.Size(114, 31);
             this.textBox1.TabIndex = 4;
             // 
             // label7
@@ -276,7 +276,7 @@
             this.button_Measure.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button_Measure.Location = new System.Drawing.Point(832, 261);
             this.button_Measure.Name = "button_Measure";
-            this.button_Measure.Size = new System.Drawing.Size(142, 55);
+            this.button_Measure.Size = new System.Drawing.Size(173, 55);
             this.button_Measure.TabIndex = 2;
             this.button_Measure.Text = "計測";
             this.button_Measure.UseVisualStyleBackColor = true;
@@ -286,7 +286,7 @@
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("MS UI Gothic", 15F);
-            this.label6.Location = new System.Drawing.Point(44, 28);
+            this.label6.Location = new System.Drawing.Point(42, 20);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(750, 30);
             this.label6.TabIndex = 1;
@@ -298,9 +298,9 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox2.Location = new System.Drawing.Point(52, 86);
+            this.pictureBox2.Location = new System.Drawing.Point(39, 77);
             this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.Size = new System.Drawing.Size(754, 586);
+            this.pictureBox2.Size = new System.Drawing.Size(732, 583);
             this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox2.TabIndex = 0;
             this.pictureBox2.TabStop = false;
@@ -310,7 +310,7 @@
             this.button_select_file.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button_select_file.Location = new System.Drawing.Point(832, 133);
             this.button_select_file.Name = "button_select_file";
-            this.button_select_file.Size = new System.Drawing.Size(142, 62);
+            this.button_select_file.Size = new System.Drawing.Size(173, 62);
             this.button_select_file.TabIndex = 6;
             this.button_select_file.Text = "データ読込";
             this.button_select_file.UseVisualStyleBackColor = true;
