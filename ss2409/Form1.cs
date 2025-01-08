@@ -10,7 +10,8 @@ using OpenCvSharp.Aruco;
 using OpenCvSharp.Extensions;
 using System.Collections;
 
-// 計測で正しい値を計算できるようにする
+// 計測で正しい値を計算できるようにする(ほぼできた)
+// キャリブレーション中のカメラの動きに対してエラーを出力
 
 namespace ss2409
 {
@@ -19,8 +20,8 @@ namespace ss2409
         private VideoCapture _videoCapture; //カメラキャプチャー用のオブジェクト
         private bool _isCameraRunning = false; //カメラが起動中かどうかのフラグ
         private Mat _frame; //カメラから取得したフレームを保持する
-        private int _captureNumber;
-        private int _captureInterval;
+        private int _captureNumber; // キャプチャー数
+        private int _captureInterval; // キャプチャー間隔
         private List<Mat> _capturedImages = new List<Mat>(); //キャプチャーした画像を保持する
 
         // カメラキャリブレーションパラメータを単一のMatとして初期化
@@ -39,9 +40,10 @@ namespace ss2409
         // Arucoマーカのパラメータ
         private List<Point3d> _measurementPoints = new List<Point3d>();
         private bool _isMeasuring = false;
-        private const float MARKER_SIZE = 0.02f; // マーカーのサイズ 2cm
+        private float MARKER_SIZE; // マーカーのサイズ 2cm
         private Dictionary _dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
         private Point3d _latestMarkerPosition; // 最新のマーカー位置を保持するフィールドを追加
+        private float _stickLength; // 指示棒の長さを10cmとして設定
 
         public Form1()
         {
@@ -395,25 +397,53 @@ namespace ss2409
 
         private void button_Measure_Click(object sender, EventArgs e)
         {
+            // ComboBox3の値を取得してマーカサイズを設定
+            if (comboBox3.SelectedItem != null && int.TryParse(comboBox3.SelectedItem.ToString(), out int markerSize))
+            {
+                MARKER_SIZE = (float)(markerSize / 100.0);
+                Console.WriteLine($"MARKER_SIZE: {MARKER_SIZE}");
+            }
+            else
+            {
+                MessageBox.Show("Arucoマーカサイズを正しく選択してください。");
+                return;
+            }
+
+            // ComboBox4の値を取得して矢印の距離を設定
+            if (comboBox4.SelectedItem != null && int.TryParse(comboBox4.SelectedItem.ToString(), out int stickLength))
+            {
+                _stickLength = (float)(stickLength / 100.0);
+                Console.WriteLine($"_stickLength: {_stickLength}");
+            }
+            else
+            {
+                MessageBox.Show("Arucoマーカと矢印の距離を正しく選択してください。");
+                return;
+            }
+
+            // 計測処理の開始または停止
             if (_isMeasuring)
             {
-                if (_measurementPoints.Count == 0) // まだ1点目が計測されていない場合
+                if (_measurementPoints.Count == 0)
                 {
-                    // 現在のマーカー位置を1点目として記録
+                    // 1点目を記録
                     CaptureFirstPoint();
                 }
-                else // 1点目が既に計測されている場合
+                else
                 {
+                    // 計測を停止
                     StopMeasurement();
                     button_Measure.Text = "計測開始";
                 }
             }
             else
             {
+                // 計測を開始
                 StartMeasurement();
                 button_Measure.Text = "1点目決定";
             }
         }
+
 
         private void StartMeasurement()
         {
@@ -457,7 +487,7 @@ namespace ss2409
                 _measurementPoints.Add(_latestMarkerPosition);
                 System.Media.SystemSounds.Beep.Play();
                 label6.Text = "画面をクリックして2点目を計測してください";
-                button_Measure.Text = "計測終了";
+                button_Measure.Text = "二点目決定";
             }
         }
 
@@ -503,7 +533,7 @@ namespace ss2409
                                 rvecsAruco.GetArray(out rvecArray);
                                 tvecsAruco.GetArray(out tvecArray);
 
-                                // マーカー位置の更新
+                                // マーカーの中心位置の決定
                                 Point3d markerPosition = new Point3d(
                                     tvecArray[0].Item0,
                                     tvecArray[0].Item1,
@@ -514,19 +544,20 @@ namespace ss2409
                                 Mat rotationMatrix = new Mat();
                                 Cv2.Rodrigues(rvecArray[0], rotationMatrix);
 
-                                Point3d tipOffset = new Point3d(
-                                     rotationMatrix.At<double>(0, 2) * 0.1,
-                                     rotationMatrix.At<double>(1, 2) * 0.1,
-                                     rotationMatrix.At<double>(2, 2) * 0.1
-                                 );
-
-                                _latestMarkerPosition = new Point3d(
-                                    markerPosition.X + tipOffset.X,
-                                    markerPosition.Y + tipOffset.Y,
-                                    markerPosition.Z + tipOffset.Z
+                                // 指示棒の長さ分だけy方向にポイントの位置を調整
+                                Point3d tipOffsetY = new Point3d(
+                                     rotationMatrix.At<double>(0, 1) * _stickLength,
+                                     rotationMatrix.At<double>(1, 1) * _stickLength,
+                                     rotationMatrix.At<double>(2, 1) * _stickLength
                                 );
 
-                                // マウスクリックで2点目を計測
+                                _latestMarkerPosition = new Point3d(
+                                    markerPosition.X + tipOffsetY.X,
+                                    markerPosition.Y + tipOffsetY.Y,
+                                    markerPosition.Z + tipOffsetY.Z
+                                );
+
+                                // マウスクリックで2点目を計測(ボタン以外を押しても長さが計測できるようになっている)
                                 if (_measurementPoints.Count == 1 && MouseButtons == MouseButtons.Left)
                                 {
                                     _measurementPoints.Add(_latestMarkerPosition);
@@ -630,6 +661,5 @@ namespace ss2409
                 }));
             });
         }
-
     }
 }
