@@ -496,7 +496,7 @@
             this.button_measure_area.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button_measure_area.Location = new System.Drawing.Point(808, 465);
             this.button_measure_area.Name = "button_measure_area";
-            this.button_measure_area.Size = new System.Drawing.Size(173, 59);
+            this.button_measure_area.Size = new System.Drawing.Size(173, 62);
             this.button_measure_area.TabIndex = 21;
             this.button_measure_area.Text = "面積測定";
             this.button_measure_area.UseVisualStyleBackColor = true;

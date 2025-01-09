@@ -10,8 +10,6 @@ using OpenCvSharp.Aruco;
 using OpenCvSharp.Extensions;
 using System.Collections;
 
-// 計測で面積を求めるタブを作成する
-
 namespace ss2409
 {
     public partial class Form1 : Form
@@ -44,9 +42,9 @@ namespace ss2409
         private Point3d _latestMarkerPosition; // 最新のマーカー位置を保持するフィールドを追加
         private float _stickLength; // 指示棒の長さを10cmとして設定
 
-        // 面積測定で用いるパラメータ
-        private List<Point3d> _vertexPoints = new List<Point3d>();
-        private bool _isCollectingVertices = false;
+        // 面積測定で用いるパラメータ (最初の三点で法線ベクトルを計算しているのででこぼこでは計算しにくい)
+        private List<Point3d> _vertexPoints = new List<Point3d>();　// 頂点を保持するリスト
+        private bool _isCollectingVertices = false; // 頂点収集中かのフラグ
 
         public Form1()
         {
@@ -611,6 +609,7 @@ namespace ss2409
             }
         }
 
+        // ピンボールカメラモデル(3D空間のポイントを2D画像平面に投影する)
         private Point2d ProjectPoint(Point3d point3d, Mat cameraMatrix)
         {
             double fx = cameraMatrix.At<double>(0, 0);
@@ -624,6 +623,7 @@ namespace ss2409
             );
         }
 
+        //二点間の距離を計算する
         private double CalculateDistance(Point3d p1, Point3d p2)
         {
             return Math.Sqrt(
