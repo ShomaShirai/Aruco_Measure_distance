@@ -10,8 +10,7 @@ using OpenCvSharp.Aruco;
 using OpenCvSharp.Extensions;
 using System.Collections;
 
-// 計測で正しい値を計算できるようにする(ほぼできた)
-// キャリブレーション中のカメラの動きに対してエラーを出力
+// 計測で面積を求めるタブを作成する
 
 namespace ss2409
 {
