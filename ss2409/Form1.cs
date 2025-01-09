@@ -496,6 +496,13 @@ namespace ss2409
         {
             try
             {
+                if (_cameraMatrixFromFile == null || _cameraMatrixFromFile.Empty() || _distCoeffsFromFile == null || _distCoeffsFromFile.Empty())
+                {
+                    MessageBox.Show("カメラマトリックスまたは歪み係数が読み込まれていません。設定を確認してください。");
+                    StopMeasurement();
+                    return;
+                }
+
                 while (_isMeasuring)
                 {
                     using (var frame = new Mat())
@@ -764,6 +771,13 @@ namespace ss2409
         {
             try
             {
+                if (_cameraMatrixFromFile == null || _cameraMatrixFromFile.Empty() || _distCoeffsFromFile == null || _distCoeffsFromFile.Empty())
+                {
+                    MessageBox.Show("カメラマトリックスまたは歪み係数が読み込まれていません。設定を確認してください。");
+                    StopMeasurement();
+                    return;
+                }
+
                 while (_isCollectingVertices)
                 {
                     using (var frame = new Mat())
