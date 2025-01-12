@@ -31,10 +31,10 @@ namespace ss2410
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
 
             // Initialize timer for periodic graph updates
-            timer = new Timer();
-            timer.Interval = 100; // Update every 100 ms
-            timer.Tick += Timer_Tick;
-            timer.Start();
+            //timer = new Timer();
+            //timer.Interval = 100; // Update every 100 ms
+            //timer.Tick += Timer_Tick;
+            //timer.Start();
 
             // Start camera feed
             Task.Run(() => ShotImage());
@@ -55,8 +55,8 @@ namespace ss2410
             }
         }
 
-        // Display camera image in pictureBox1
-        private void ShotImage()
+        // カメラ画像を描画する関数
+        private async void ShotImage()
         {
             var camera = new VideoCapture(0);
             while (true)
@@ -66,18 +66,16 @@ namespace ss2410
                     camera.Read(frame);
                     if (!frame.Empty())
                     {
-                        mouse_picture.Invoke(new Action(() =>
-                        {
-                            mouse_picture.Image = BitmapConverter.ToBitmap(frame);
-                        }));
+                        await UpdateUI(frame.ToBitmap(), mouse_picture);
                     }
                 }
             }
         }
 
-        // Establish serial connection and handle incoming data
+        // シリアル入力接続を管理する関数
         private bool Connect()
         {
+            // シリアルポートの初期化
             _Serial = new SerialPort
             {
                 PortName = "COM11",
@@ -91,10 +89,12 @@ namespace ss2410
                 ReadTimeout = 10000,
                 WriteTimeout = 10000,
             };
+            // データが入力された際のイベント
             _Serial.DataReceived += Serial_DataReceived;
 
             try
             {
+                // ポートの監視を開始する
                 _Serial.Open();
             }
             catch (Exception ex)
@@ -105,30 +105,34 @@ namespace ss2410
             return true;
         }
 
-        // Handle incoming serial data
+        // シリアル入力からデータを読み取って配列に保存する関数
         private void Serial_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                string data = _Serial.ReadLine();
-                string[] values = data.Split(',');
-                if (values.Length == 3)
+                // シリアルバッファーにデータがある限り読み続ける
+                while (_Serial.BytesToRead > 0)
                 {
-                    float accX = float.Parse(values[0]);
-                    float accY = float.Parse(values[1]);
-                    float accZ = float.Parse(values[2]);
-
-                    Console.WriteLine($"X = {accX}, Y = {accY}, Z = {accZ}");
-
-                    accXValues.Add(accX);
-                    accYValues.Add(accY);
-                    accZValues.Add(accZ);
-
-                    if (accXValues.Count > 100)
+                    string data = _Serial.ReadLine();
+                    string[] values = data.Split(',');
+                    if (values.Length == 3)
                     {
-                        accXValues.RemoveAt(0);
-                        accYValues.RemoveAt(0);
-                        accZValues.RemoveAt(0);
+                        float accX = float.Parse(values[0]);
+                        float accY = float.Parse(values[1]);
+                        float accZ = float.Parse(values[2]);
+
+                        Console.WriteLine($"X = {accX}, Y = {accY}, Z = {accZ}");
+
+                        accXValues.Add(accX);
+                        accYValues.Add(accY);
+                        accZValues.Add(accZ);
+
+                        if (accXValues.Count > 100)
+                        {
+                            accXValues.RemoveAt(0);
+                            accYValues.RemoveAt(0);
+                            accZValues.RemoveAt(0);
+                        }
                     }
                 }
             }
@@ -138,8 +142,8 @@ namespace ss2410
             }
         }
 
-        // Update graph in pictureBox2
-        private void Timer_Tick(object sender, EventArgs e)
+        // グラフを描画する関数
+        private async void Timer_Tick(object sender, EventArgs e)
         {
             Bitmap bitmap = new Bitmap(slant_picture.Width, slant_picture.Height);
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -167,7 +171,28 @@ namespace ss2410
                 }
             }
 
-            slant_picture.Image = bitmap;
+            await UpdateUI(bitmap, slant_picture);
+        }
+
+        // UIを更新する関数
+        private async Task UpdateUI(Bitmap bitmap, PictureBox pictureName)
+        {
+            await Task.Run(() =>
+            {
+                Invoke(new Action(() =>
+                {
+                    if (pictureName.Image != null)
+                    {
+                        var oldImage = pictureName.Image;
+                        pictureName.Image = bitmap;
+                        oldImage.Dispose();
+                    }
+                    else
+                    {
+                        pictureName.Image = bitmap;
+                    }
+                }));
+            });
         }
     }
 }
