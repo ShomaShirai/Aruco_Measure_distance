@@ -118,6 +118,8 @@ namespace ss2410
                     float accY = float.Parse(values[1]);
                     float accZ = float.Parse(values[2]);
 
+                    Console.WriteLine($"X = {accX}, Y = {accY}, Z = {accZ}");
+
                     accXValues.Add(accX);
                     accYValues.Add(accY);
                     accZValues.Add(accZ);
