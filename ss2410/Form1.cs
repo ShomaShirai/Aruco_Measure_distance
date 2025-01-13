@@ -45,7 +45,7 @@ namespace ss2410
             this.Text = "Aerial Mouse GUI";
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
 
-            // キーボード入力イベントの登録
+            // キーボードのqを押すことでウィンドウを閉じれるようにする
             this.KeyDown += Form1_KeyDown;
 
             // グラフを描画するタイマーを初期化
@@ -156,6 +156,8 @@ namespace ss2410
                         float accY = float.Parse(values[2]);
                         float accZ = float.Parse(values[3]);
 
+                        
+
                         btnA.Add(buttonA);
                         accXValues.Add(accX);
                         accYValues.Add(accY);
@@ -245,7 +247,7 @@ namespace ss2410
 
             string status = isMouseControlEnabled ? "有効" : "無効";
             this.Text = $"Aerial Mouse GUI - マウス制御: {status}";
-            label1.Text = isMouseControlEnabled ? "空中マウスが有効" : "空中マウスが無効";
+            label1.Text = isMouseControlEnabled ? "空中マウスが有効中．ボタンを押して無効にできます．カメラ画像に青線を描画できます" : "空中マウスが無効．ボタンを押して有効にできます";
 
             if (isMouseControlEnabled)
             {

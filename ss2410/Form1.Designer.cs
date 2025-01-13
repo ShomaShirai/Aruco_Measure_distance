@@ -60,9 +60,9 @@
             this.label1.Location = new System.Drawing.Point(18, 15);
             this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(614, 30);
+            this.label1.Size = new System.Drawing.Size(794, 45);
             this.label1.TabIndex = 1;
-            this.label1.Text = "マイコンのダブルクリックで空中マウスを起動出来ます";
+            this.label1.Text = "ボタンを押すことで空中マウスを起動できます";
             // 
             // slant_picture
             // 
@@ -120,11 +120,11 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(375, 582);
+            this.button1.Location = new System.Drawing.Point(348, 583);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(175, 42);
             this.button1.TabIndex = 17;
-            this.button1.Text = "button1";
+            this.button1.Text = "空中マウス ON";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
