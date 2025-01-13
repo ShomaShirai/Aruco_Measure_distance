@@ -31,6 +31,8 @@
             this.mouse_picture = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
             this.slant_picture = new System.Windows.Forms.PictureBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.mouse_picture)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.slant_picture)).BeginInit();
             this.SuspendLayout();
@@ -39,7 +41,7 @@
             // 
             this.mouse_picture.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.mouse_picture.Cursor = System.Windows.Forms.Cursors.SizeAll;
-            this.mouse_picture.Location = new System.Drawing.Point(14, 87);
+            this.mouse_picture.Location = new System.Drawing.Point(14, 104);
             this.mouse_picture.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.mouse_picture.Name = "mouse_picture";
             this.mouse_picture.Size = new System.Drawing.Size(600, 476);
@@ -62,7 +64,7 @@
             // 
             this.slant_picture.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.slant_picture.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.slant_picture.Location = new System.Drawing.Point(644, 87);
+            this.slant_picture.Location = new System.Drawing.Point(649, 104);
             this.slant_picture.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.slant_picture.Name = "slant_picture";
             this.slant_picture.Size = new System.Drawing.Size(600, 476);
@@ -70,11 +72,33 @@
             this.slant_picture.TabIndex = 2;
             this.slant_picture.TabStop = false;
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("MS UI Gothic", 12F);
+            this.label2.Location = new System.Drawing.Point(246, 75);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(109, 24);
+            this.label2.TabIndex = 3;
+            this.label2.Text = "カメラ映像";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("MS UI Gothic", 12F);
+            this.label3.Location = new System.Drawing.Point(881, 75);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(163, 24);
+            this.label3.TabIndex = 4;
+            this.label3.Text = "センサー値グラフ";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1333, 675);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.slant_picture);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.mouse_picture);
@@ -93,6 +117,8 @@
         private System.Windows.Forms.PictureBox mouse_picture;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.PictureBox slant_picture;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
     }
 }
 

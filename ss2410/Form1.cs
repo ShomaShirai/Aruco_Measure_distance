@@ -12,16 +12,33 @@ using OpenCvSharp.Extensions;
 using System.Collections;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ss2410
 {
     public partial class Form1 : Form
     {
         private SerialPort _Serial;
+        private List<int> btnA = new List<int>();
         private List<float> accXValues = new List<float>();
         private List<float> accYValues = new List<float>();
         private List<float> accZValues = new List<float>();
         private Timer timer;
+
+        private bool isDrawing = false;
+        private System.Drawing.Point lastPoint = System.Drawing.Point.Empty;
+        private Bitmap drawingLayer = null;
+
+        [DllImport("user32.dll")]
+        static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
+
+        private const int MOUSEEVENTF_MOVE = 0x0001;
+        private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
+        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const int MOUSEEVENTF_LEFTUP = 0x0004;
+
+        private float prevX = 0;
+        private float prevY = 0;
 
         public Form1()
         {
@@ -30,16 +47,23 @@ namespace ss2410
             this.Text = "Aerial mouse GUI";
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
 
-            // Initialize timer for periodic graph updates
-            //timer = new Timer();
-            //timer.Interval = 100; // Update every 100 ms
-            //timer.Tick += Timer_Tick;
-            //timer.Start();
+            // 描画レイヤーの初期化
+            drawingLayer = new Bitmap(mouse_picture.Width, mouse_picture.Height);
+            using (Graphics g = Graphics.FromImage(drawingLayer))
+            {
+                g.Clear(Color.Transparent);
+            }
 
-            // Start camera feed
+            // グラフを描画する
+            timer = new Timer();
+            timer.Interval = 100; // 0.1秒ごとにグラフに点を打つ
+            timer.Tick += Timer_Tick;
+            timer.Start();
+
+            // カメラを開始する
             Task.Run(() => ShotImage());
 
-            // Start serial connection
+            // シリアル入力を行う
             bool isConnect = Connect();
             if (!isConnect)
             {
@@ -110,25 +134,50 @@ namespace ss2410
         {
             try
             {
-                // シリアルバッファーにデータがある限り読み続ける
                 while (_Serial.BytesToRead > 0)
                 {
                     string data = _Serial.ReadLine();
                     string[] values = data.Split(',');
-                    if (values.Length == 3)
+                    if (values.Length == 4)
                     {
-                        float accX = float.Parse(values[0]);
-                        float accY = float.Parse(values[1]);
-                        float accZ = float.Parse(values[2]);
+                        int button = int.Parse(values[0]);
+                        float accX = float.Parse(values[1]);
+                        float accY = float.Parse(values[2]);
+                        float accZ = float.Parse(values[3]);
 
-                        Console.WriteLine($"X = {accX}, Y = {accY}, Z = {accZ}");
+                        // カーソル位置を取得
+                        System.Drawing.Point cursorPos = Cursor.Position;
+                        System.Drawing.Point picturePos = mouse_picture.PointToClient(cursorPos);
 
+                        // ボタンAが押されている場合、描画を行う
+                        if (button == 1 &&
+                            picturePos.X >= 0 && picturePos.X < mouse_picture.Width &&
+                            picturePos.Y >= 0 && picturePos.Y < mouse_picture.Height)
+                        {
+                            if (!isDrawing)
+                            {
+                                isDrawing = true;
+                                lastPoint = picturePos;
+                            }
+                            else
+                            {
+                                DrawLine(lastPoint, picturePos);
+                                lastPoint = picturePos;
+                            }
+                        }
+                        else
+                        {
+                            isDrawing = false;
+                        }
+
+                        btnA.Add(button);
                         accXValues.Add(accX);
                         accYValues.Add(accY);
                         accZValues.Add(accZ);
 
                         if (accXValues.Count > 100)
                         {
+                            btnA.RemoveAt(0);
                             accXValues.RemoveAt(0);
                             accYValues.RemoveAt(0);
                             accZValues.RemoveAt(0);
@@ -150,20 +199,20 @@ namespace ss2410
             {
                 g.Clear(Color.White);
 
-                Pen penX = new Pen(Color.Red, 2);
-                Pen penY = new Pen(Color.Green, 2);
-                Pen penZ = new Pen(Color.Blue, 2);
+                Pen penX = new Pen(Color.Red, 2); // x方向の加速度は赤色
+                Pen penY = new Pen(Color.Green, 2); // y方向の加速度は緑色
+                Pen penZ = new Pen(Color.Blue, 2); // z方向の加速度は青色
 
                 for (int i = 1; i < accXValues.Count; i++)
                 {
                     int x1 = (i - 1) * slant_picture.Width / 100;
                     int x2 = i * slant_picture.Width / 100;
-                    int y1X = slant_picture.Height / 2 - (int)(accXValues[i - 1] * 10);
-                    int y2X = slant_picture.Height / 2 - (int)(accXValues[i] * 10);
-                    int y1Y = slant_picture.Height / 2 - (int)(accYValues[i - 1] * 10);
-                    int y2Y = slant_picture.Height / 2 - (int)(accYValues[i] * 10);
-                    int y1Z = slant_picture.Height / 2 - (int)(accZValues[i - 1] * 10);
-                    int y2Z = slant_picture.Height / 2 - (int)(accZValues[i] * 10);
+                    int y1X = slant_picture.Height / 2 - (int)(accXValues[i - 1] * 100);
+                    int y2X = slant_picture.Height / 2 - (int)(accXValues[i] * 100);
+                    int y1Y = slant_picture.Height / 2 - (int)(accYValues[i - 1] * 100);
+                    int y2Y = slant_picture.Height / 2 - (int)(accYValues[i] * 100);
+                    int y1Z = slant_picture.Height / 2 - (int)(accZValues[i - 1] * 100);
+                    int y2Z = slant_picture.Height / 2 - (int)(accZValues[i] * 100);
 
                     g.DrawLine(penX, x1, y1X, x2, y2X);
                     g.DrawLine(penY, x1, y1Y, x2, y2Y);
@@ -174,26 +223,43 @@ namespace ss2410
             await UpdateUI(bitmap, slant_picture);
         }
 
+        // 描画を行う関数
+        private void DrawLine(System.Drawing.Point start, System.Drawing.Point end)
+        {
+            using (Graphics g = Graphics.FromImage(drawingLayer))
+            {
+                using (Pen pen = new Pen(Color.Blue, 2))
+                {
+                    g.DrawLine(pen, start, end);
+                }
+            }
+        }
+
         // UIを更新する関数
         private async Task UpdateUI(Bitmap bitmap, PictureBox pictureName)
         {
             await Task.Run(() =>
             {
-                Invoke(new Action(() =>
+                try {
+                    pictureName.Invoke(new Action(() =>
+                    {
+                        if (pictureName.Image != null)
+                        {
+                            var oldImage = pictureName.Image;
+                            pictureName.Image = bitmap;
+                            oldImage.Dispose();
+                        }
+                        else
+                        {
+                            pictureName.Image = bitmap;
+                        }
+                    }));
+                }
+                catch (Exception ex)
                 {
-                    if (pictureName.Image != null)
-                    {
-                        var oldImage = pictureName.Image;
-                        pictureName.Image = bitmap;
-                        oldImage.Dispose();
-                    }
-                    else
-                    {
-                        pictureName.Image = bitmap;
-                    }
-                }));
+                    Debug.WriteLine(ex.Message);
+                }                
             });
         }
     }
 }
-
