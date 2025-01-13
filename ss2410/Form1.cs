@@ -25,15 +25,13 @@ namespace ss2410
         private List<float> accZValues = new List<float>();
         private Timer timer;
 
-        // 既存のフィールドに追加
+        // マウス制御用の定数とフィールド
         private const int MARKER_SIZE = 20;
         private System.Drawing.Point mousePoint;
-        private float scrollSpeed; // デフォルトのスクロールスピード
+        private float scrollSpeed = 1.5f; // デフォルトのスクロールスピード
         private Mat frame;
 
-        // ダブルクリック検出用の変数
-        private const int DOUBLE_CLICK_INTERVAL = 500; // ミリ秒
-        private DateTime lastButtonPress = DateTime.MinValue;
+        // 空中マウスを利用できるか判断するフラグ
         private bool isMouseControlEnabled = false;
 
         // Win32 APIのマウス制御用
@@ -44,19 +42,21 @@ namespace ss2410
         {
             InitializeComponent();
             this.FormClosing += Form1_FormClosing;
-            this.Text = "Aerial mouse GUI";
+            this.Text = "Aerial Mouse GUI";
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
 
-            // グラフを描画する
-            timer = new Timer();
-            timer.Interval = 100; // 0.1秒ごとにグラフに点を打つ
+            // キーボード入力イベントの登録
+            this.KeyDown += Form1_KeyDown;
+
+            // グラフを描画するタイマーを初期化
+            timer = new Timer { Interval = 100 }; // 0.1秒ごとにグラフを更新
             timer.Tick += Timer_Tick;
             timer.Start();
 
             // カメラを開始する
             Task.Run(() => ShotImage());
 
-            // シリアル入力を行う
+            // シリアル入力を開始する
             bool isConnect = Connect();
             if (!isConnect)
             {
@@ -64,18 +64,16 @@ namespace ss2410
             }
 
             // マウスポイントの初期化
-            mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2,
-                                 Screen.PrimaryScreen.Bounds.Height / 2);
+            mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
 
-            // タイマーのTickイベントにマウス更新を追加
-            timer.Tick += (s, e) => {
-                if (isMouseControlEnabled)
-                {
-                    UpdateMousePoint();
-                }
+            // 空中マウス制御の更新イベントを設定
+            timer.Tick += (s, e) =>
+            {
+                if (isMouseControlEnabled) UpdateMousePoint();
             };
         }
 
+        // スクロールバーの変更イベント
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
             SetScrollSpeed(trackBar1.Value / 10.0f);
@@ -83,9 +81,15 @@ namespace ss2410
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_Serial != null && _Serial.IsOpen)
+            if (_Serial != null && _Serial.IsOpen) _Serial.Close();
+        }
+
+        // キーボード入力イベントハンドラ
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Q)
             {
-                _Serial.Close();
+                this.Close(); // ウィンドウを閉じる
             }
         }
 
@@ -109,7 +113,6 @@ namespace ss2410
         // シリアル入力接続を管理する関数
         private bool Connect()
         {
-            // シリアルポートの初期化
             _Serial = new SerialPort
             {
                 PortName = "COM11",
@@ -121,14 +124,12 @@ namespace ss2410
                 DtrEnable = false,
                 RtsEnable = false,
                 ReadTimeout = 10000,
-                WriteTimeout = 10000,
+                WriteTimeout = 10000
             };
-            // データが入力された際のイベント
             _Serial.DataReceived += Serial_DataReceived;
 
             try
             {
-                // ポートの監視を開始する
                 _Serial.Open();
             }
             catch (Exception ex)
@@ -139,12 +140,11 @@ namespace ss2410
             return true;
         }
 
-        // シリアル入力からデータを読み取って配列に保存する関数
+        // シリアルデータを読み取る
         private void Serial_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                // シリアルバッファーにデータがある限り読み続ける
                 while (_Serial.BytesToRead > 0)
                 {
                     string data = _Serial.ReadLine();
@@ -155,8 +155,6 @@ namespace ss2410
                         float accX = float.Parse(values[1]);
                         float accY = float.Parse(values[2]);
                         float accZ = float.Parse(values[3]);
-
-                        ProcessButtonA(buttonA);
 
                         btnA.Add(buttonA);
                         accXValues.Add(accX);
@@ -186,9 +184,9 @@ namespace ss2410
             {
                 g.Clear(Color.White);
 
-                Pen penX = new Pen(Color.Red, 2); // x方向の加速度は赤色
-                Pen penY = new Pen(Color.Green, 2); // y方向の加速度は緑色
-                Pen penZ = new Pen(Color.Blue, 2); // z方向の加速度は青色
+                Pen penX = new Pen(Color.Red, 2);
+                Pen penY = new Pen(Color.Green, 2);
+                Pen penZ = new Pen(Color.Blue, 2);
 
                 for (int i = 1; i < accXValues.Count; i++)
                 {
@@ -206,7 +204,6 @@ namespace ss2410
                     g.DrawLine(penZ, x1, y1Z, x2, y2Z);
                 }
             }
-
             await UpdateUI(bitmap, slant_picture);
         }
 
@@ -215,28 +212,20 @@ namespace ss2410
         {
             try
             {
-                // 直近5個の加速度データを取得
                 var lastFiveX = accXValues.Skip(Math.Max(0, accXValues.Count - 5)).ToList();
                 var lastFiveY = accYValues.Skip(Math.Max(0, accYValues.Count - 5)).ToList();
-                var lastFiveZ = accZValues.Skip(Math.Max(0, accZValues.Count - 5)).ToList();
 
                 if (lastFiveX.Count > 0)
                 {
-                    // 平均値を計算
                     float averageX = lastFiveX.Average();
                     float averageY = lastFiveY.Average();
 
-                    // スクロールスピードに応じた変位を加算
                     mousePoint.X += (int)(scrollSpeed * averageX * 10);
                     mousePoint.Y -= (int)(scrollSpeed * averageY * 10);
 
-                    // 画面の境界チェック
-                    mousePoint.X = Math.Max(0, Math.Min(mousePoint.X,
-                        Screen.PrimaryScreen.Bounds.Width - MARKER_SIZE));
-                    mousePoint.Y = Math.Max(0, Math.Min(mousePoint.Y,
-                        Screen.PrimaryScreen.Bounds.Height - MARKER_SIZE));
+                    mousePoint.X = Math.Max(0, Math.Min(mousePoint.X, Screen.PrimaryScreen.Bounds.Width - MARKER_SIZE));
+                    mousePoint.Y = Math.Max(0, Math.Min(mousePoint.Y, Screen.PrimaryScreen.Bounds.Height - MARKER_SIZE));
 
-                    // カーソル位置を更新
                     SetCursorPos(mousePoint.X, mousePoint.Y);
                 }
             }
@@ -246,40 +235,26 @@ namespace ss2410
             }
         }
 
-        // ボタンAのダブルクリック検出とマウス制御の切り替え
-        private void ProcessButtonA(int buttonState)
+        // ボタンを押した際の空中マウスの有効/無効化
+        private void button1_Click(object sender, EventArgs e)
         {
-            if (buttonState == 1) // ボタンが押された時
+            isMouseControlEnabled = !isMouseControlEnabled;
+            Debug.WriteLine($"Mouse control enabled: {isMouseControlEnabled}");
+
+            button1.Text = isMouseControlEnabled ? "空中マウス OFF" : "空中マウス ON";
+
+            string status = isMouseControlEnabled ? "有効" : "無効";
+            this.Text = $"Aerial Mouse GUI - マウス制御: {status}";
+            label1.Text = isMouseControlEnabled ? "空中マウスが有効" : "空中マウスが無効";
+
+            if (isMouseControlEnabled)
             {
-                DateTime now = DateTime.Now;
-                TimeSpan timeSinceLastPress = now - lastButtonPress;
-
-                if (timeSinceLastPress.TotalMilliseconds <= DOUBLE_CLICK_INTERVAL)
-                {
-                    // ダブルクリック検出
-                    isMouseControlEnabled = !isMouseControlEnabled;
-
-                    // UI更新（状態を表示）
-                    this.Invoke(new Action(() =>
-                    {
-                        string status = isMouseControlEnabled ? "有効" : "無効";
-                        this.Text = $"Aerial mouse GUI - マウス制御: {status}";
-                        if (isMouseControlEnabled == true)
-                        {
-                            label1.Text = "空中マウスが有効，マイコンをクリックしながら線を描画できます．ダブルクリックで空中マウス解除";
-                        }
-                        else
-                        {
-                            label1.Text = "マイコンのダブルクリックで空中マウスを起動出来ます";
-                        }
-                    }));
-                }
-
-                lastButtonPress = now;
+                mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
+                SetCursorPos(mousePoint.X, mousePoint.Y);
             }
         }
 
-        // スクロールスピードを設定するメソッド
+        // スクロールスピードを設定
         public void SetScrollSpeed(float speed)
         {
             if (speed >= 0.1f && speed <= 5.0f)
@@ -288,13 +263,13 @@ namespace ss2410
             }
         }
 
-        // マウス位置を取得するメソッド
+        // マウス位置を取得
         public System.Drawing.Point GetMousePosition()
         {
             return mousePoint;
         }
 
-        // UIを更新する関数
+        // UIを更新
         private async Task UpdateUI(Bitmap bitmap, PictureBox pictureName)
         {
             await Task.Run(() =>
