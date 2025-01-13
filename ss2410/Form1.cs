@@ -25,20 +25,20 @@ namespace ss2410
         private List<float> accZValues = new List<float>();
         private Timer timer;
 
-        private bool isDrawing = false;
-        private System.Drawing.Point lastPoint = System.Drawing.Point.Empty;
-        private Bitmap drawingLayer = null;
+        // 既存のフィールドに追加
+        private const int MARKER_SIZE = 20;
+        private System.Drawing.Point mousePoint;
+        private float scrollSpeed = 1.0f; // デフォルトのスクロールスピード
+        private Mat frame;
 
+        // ダブルクリック検出用の変数
+        private const int DOUBLE_CLICK_INTERVAL = 800; // ミリ秒
+        private DateTime lastButtonPress = DateTime.MinValue;
+        private bool isMouseControlEnabled = false;
+
+        // Win32 APIのマウス制御用
         [DllImport("user32.dll")]
-        static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
-
-        private const int MOUSEEVENTF_MOVE = 0x0001;
-        private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
-        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
-        private const int MOUSEEVENTF_LEFTUP = 0x0004;
-
-        private float prevX = 0;
-        private float prevY = 0;
+        private static extern bool SetCursorPos(int X, int Y);
 
         public Form1()
         {
@@ -46,13 +46,6 @@ namespace ss2410
             this.FormClosing += Form1_FormClosing;
             this.Text = "Aerial mouse GUI";
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
-
-            // 描画レイヤーの初期化
-            drawingLayer = new Bitmap(mouse_picture.Width, mouse_picture.Height);
-            using (Graphics g = Graphics.FromImage(drawingLayer))
-            {
-                g.Clear(Color.Transparent);
-            }
 
             // グラフを描画する
             timer = new Timer();
@@ -69,6 +62,18 @@ namespace ss2410
             {
                 MessageBox.Show("Failed to connect to serial port", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            // マウスポイントの初期化
+            mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2,
+                                 Screen.PrimaryScreen.Bounds.Height / 2);
+
+            // タイマーのTickイベントにマウス更新を追加
+            timer.Tick += (s, e) => {
+                if (isMouseControlEnabled)
+                {
+                    UpdateMousePoint();
+                }
+            };
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -134,50 +139,27 @@ namespace ss2410
         {
             try
             {
+                // シリアルバッファーにデータがある限り読み続ける
                 while (_Serial.BytesToRead > 0)
                 {
                     string data = _Serial.ReadLine();
                     string[] values = data.Split(',');
                     if (values.Length == 4)
                     {
-                        int button = int.Parse(values[0]);
+                        int buttonA = int.Parse(values[0]);
                         float accX = float.Parse(values[1]);
                         float accY = float.Parse(values[2]);
                         float accZ = float.Parse(values[3]);
 
-                        // カーソル位置を取得
-                        System.Drawing.Point cursorPos = Cursor.Position;
-                        System.Drawing.Point picturePos = mouse_picture.PointToClient(cursorPos);
+                        ProcessButtonA(buttonA);
 
-                        // ボタンAが押されている場合、描画を行う
-                        if (button == 1 &&
-                            picturePos.X >= 0 && picturePos.X < mouse_picture.Width &&
-                            picturePos.Y >= 0 && picturePos.Y < mouse_picture.Height)
-                        {
-                            if (!isDrawing)
-                            {
-                                isDrawing = true;
-                                lastPoint = picturePos;
-                            }
-                            else
-                            {
-                                DrawLine(lastPoint, picturePos);
-                                lastPoint = picturePos;
-                            }
-                        }
-                        else
-                        {
-                            isDrawing = false;
-                        }
-
-                        btnA.Add(button);
+                        btnA.Add(buttonA);
                         accXValues.Add(accX);
                         accYValues.Add(accY);
                         accZValues.Add(accZ);
 
                         if (accXValues.Count > 100)
                         {
-                            btnA.RemoveAt(0);
                             accXValues.RemoveAt(0);
                             accYValues.RemoveAt(0);
                             accZValues.RemoveAt(0);
@@ -223,16 +205,88 @@ namespace ss2410
             await UpdateUI(bitmap, slant_picture);
         }
 
-        // 描画を行う関数
-        private void DrawLine(System.Drawing.Point start, System.Drawing.Point end)
+        // マウスポイントを更新する関数
+        private void UpdateMousePoint()
         {
-            using (Graphics g = Graphics.FromImage(drawingLayer))
+            try
             {
-                using (Pen pen = new Pen(Color.Blue, 2))
+                // 直近5個の加速度データを取得
+                var lastFiveX = accXValues.Skip(Math.Max(0, accXValues.Count - 5)).ToList();
+                var lastFiveY = accYValues.Skip(Math.Max(0, accYValues.Count - 5)).ToList();
+                var lastFiveZ = accZValues.Skip(Math.Max(0, accZValues.Count - 5)).ToList();
+
+                if (lastFiveX.Count > 0)
                 {
-                    g.DrawLine(pen, start, end);
+                    // 平均値を計算
+                    float averageX = lastFiveX.Average();
+                    float averageY = lastFiveY.Average();
+
+                    // スクロールスピードに応じた変位を加算
+                    mousePoint.X += (int)(scrollSpeed * averageX * 10);
+                    mousePoint.Y -= (int)(scrollSpeed * averageY * 10);
+
+                    // 画面の境界チェック
+                    mousePoint.X = Math.Max(0, Math.Min(mousePoint.X,
+                        Screen.PrimaryScreen.Bounds.Width - MARKER_SIZE));
+                    mousePoint.Y = Math.Max(0, Math.Min(mousePoint.Y,
+                        Screen.PrimaryScreen.Bounds.Height - MARKER_SIZE));
+
+                    // カーソル位置を更新
+                    SetCursorPos(mousePoint.X, mousePoint.Y);
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Mouse update error: {ex.Message}");
+            }
+        }
+
+        // ボタンAのダブルクリック検出とマウス制御の切り替え
+        private void ProcessButtonA(int buttonState)
+        {
+            if (buttonState == 1) // ボタンが押された時
+            {
+                DateTime now = DateTime.Now;
+                TimeSpan timeSinceLastPress = now - lastButtonPress;
+
+                if (timeSinceLastPress.TotalMilliseconds <= DOUBLE_CLICK_INTERVAL)
+                {
+                    // ダブルクリック検出
+                    isMouseControlEnabled = !isMouseControlEnabled;
+
+                    // UI更新（状態を表示）
+                    this.Invoke(new Action(() =>
+                    {
+                        string status = isMouseControlEnabled ? "有効" : "無効";
+                        this.Text = $"Aerial mouse GUI - マウス制御: {status}";
+                        if (isMouseControlEnabled == true)
+                        {
+                            label1.Text = "空中マウスが有効，マイコンをクリックしながら線を描画できます．ダブルクリックで空中マウス解除";
+                        }
+                        else
+                        {
+                            label1.Text = "マイコンのダブルクリックで空中マウスを起動出来ます";
+                        }
+                    }));
+                }
+
+                lastButtonPress = now;
+            }
+        }
+
+        // スクロールスピードを設定するメソッド
+        public void SetScrollSpeed(float speed)
+        {
+            if (speed >= 0.1f && speed <= 5.0f)
+            {
+                scrollSpeed = speed;
+            }
+        }
+
+        // マウス位置を取得するメソッド
+        public System.Drawing.Point GetMousePosition()
+        {
+            return mousePoint;
         }
 
         // UIを更新する関数

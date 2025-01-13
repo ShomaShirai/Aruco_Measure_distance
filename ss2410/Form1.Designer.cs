@@ -44,7 +44,7 @@
             this.mouse_picture.Location = new System.Drawing.Point(14, 104);
             this.mouse_picture.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.mouse_picture.Name = "mouse_picture";
-            this.mouse_picture.Size = new System.Drawing.Size(600, 476);
+            this.mouse_picture.Size = new System.Drawing.Size(600, 450);
             this.mouse_picture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.mouse_picture.TabIndex = 0;
             this.mouse_picture.TabStop = false;
@@ -56,9 +56,9 @@
             this.label1.Location = new System.Drawing.Point(18, 15);
             this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(647, 30);
+            this.label1.Size = new System.Drawing.Size(614, 30);
             this.label1.TabIndex = 1;
-            this.label1.Text = "左画面を見ながら空中マウスを自由に動かしてください";
+            this.label1.Text = "マイコンのダブルクリックで空中マウスを起動出来ます";
             // 
             // slant_picture
             // 
@@ -67,7 +67,7 @@
             this.slant_picture.Location = new System.Drawing.Point(649, 104);
             this.slant_picture.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.slant_picture.Name = "slant_picture";
-            this.slant_picture.Size = new System.Drawing.Size(600, 476);
+            this.slant_picture.Size = new System.Drawing.Size(600, 450);
             this.slant_picture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.slant_picture.TabIndex = 2;
             this.slant_picture.TabStop = false;
@@ -109,6 +109,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.slant_picture)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
+
 
         }
 
