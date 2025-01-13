@@ -18,6 +18,7 @@ namespace ss2410
 {
     public partial class Form1 : Form
     {
+        // シリアル通信のパラメータ
         private SerialPort _Serial;
         private List<int> btnA = new List<int>();
         private List<float> accXValues = new List<float>();
@@ -25,11 +26,15 @@ namespace ss2410
         private List<float> accZValues = new List<float>();
         private Timer timer;
 
-        // マウス制御用の定数とフィールド
-        private const int MARKER_SIZE = 20;
-        private System.Drawing.Point mousePoint;
+        // マウス制御のパラメータ
+        private const int MARKER_SIZE = 20; // マウスポインタのサイズ
+        private System.Drawing.Point mousePoint; // マウスポインタの位置
         private float scrollSpeed = 1.5f; // デフォルトのスクロールスピード
-        private Mat frame;
+
+        // 線描画のパラメータ
+        private List<System.Drawing.Point> drawingPoints = new List<System.Drawing.Point>(); // 描画する点のリスト
+        private bool isDrawing = false; // 描画中かどうかのフラグ
+        private Bitmap drawingLayer; // 描画用のbitmao
 
         // 空中マウスを利用できるか判断するフラグ
         private bool isMouseControlEnabled = false;
@@ -37,6 +42,12 @@ namespace ss2410
         // Win32 APIのマウス制御用
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int X, int Y);
+
+        // fpsやHzの計測用パラメータ
+        private int cameraFrameCount = 0;
+        private int pictureBoxFrameCount = 0;
+        private int serialDataCount = 0;
+        private Stopwatch stopwatch = new Stopwatch();
 
         public Form1()
         {
@@ -52,6 +63,14 @@ namespace ss2410
             timer = new Timer { Interval = 100 }; // 0.1秒ごとにグラフを更新
             timer.Tick += Timer_Tick;
             timer.Start();
+
+            // FPS計測用のタイマーを設定（1秒ごとに更新）
+            stopwatch.Start();
+
+            // FPS計測用のタイマーを設定（1秒ごとに更新）
+            Timer fpsTimer = new Timer { Interval = 1000 };
+            fpsTimer.Tick += FpsTimer_Tick;
+            fpsTimer.Start();
 
             // カメラを開始する
             Task.Run(() => ShotImage());
@@ -71,46 +90,118 @@ namespace ss2410
             {
                 if (isMouseControlEnabled) UpdateMousePoint();
             };
+
+            InitializeDrawingLayer();
         }
 
-        // スクロールバーの変更イベント
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
             SetScrollSpeed(trackBar1.Value / 10.0f);
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void FpsTimer_Tick(object sender, EventArgs e)
         {
-            if (_Serial != null && _Serial.IsOpen) _Serial.Close();
+            // 経過時間を取得
+            double elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+
+            // 各値の計算（小数点以下2桁）
+            double cameraFps = cameraFrameCount / elapsedSeconds;
+            double pictureBoxFps = pictureBoxFrameCount / elapsedSeconds;
+            double serialHz = serialDataCount / elapsedSeconds;
+
+            // ラベルの更新
+            label6.Text = $"Camera FPS: {cameraFps:F2}";
+            label5.Text = $"Display FPS: {pictureBoxFps:F2}";
+            label7.Text = $"Serial Hz: {serialHz:F2}";
+
+            // カウントのリセット
+            cameraFrameCount = 0;
+            pictureBoxFrameCount = 0;
+            serialDataCount = 0;
+
+            // Stopwatchをリセット
+            stopwatch.Restart();
         }
 
-        // キーボード入力イベントハンドラ
+        private void InitializeDrawingLayer()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(InitializeDrawingLayer));
+                return;
+            }
+
+            drawingLayer = new Bitmap(mouse_picture.Width, mouse_picture.Height);
+            using (Graphics g = Graphics.FromImage(drawingLayer))
+            {
+                g.Clear(Color.Transparent);
+            }
+
+            mouse_picture.Paint += PaintLine; // PaintLineをPaintイベントに追加
+        }
+
+        private void PaintLine(object sender, PaintEventArgs e)
+        {
+            if (drawingPoints.Count > 1)
+            {
+                using (Pen pen = new Pen(Color.Blue, 2))
+                {
+                    // 描画する線を PictureBox に描画
+                    e.Graphics.DrawLines(pen, drawingPoints.ToArray());
+                }
+            }
+        }
+
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (_Serial != null && _Serial.IsOpen)
+            {
+                _Serial.Close();
+            }
+        }
+
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Q)
             {
-                this.Close(); // ウィンドウを閉じる
+                this.Close();
             }
         }
 
-        // カメラ画像を描画する関数
+        // カメラ画像を取得
         private async void ShotImage()
         {
-            var camera = new VideoCapture(0);
-            while (true)
+            using (var camera = new VideoCapture(0))
             {
-                using (var frame = new Mat())
+                while (true)
                 {
-                    camera.Read(frame);
-                    if (!frame.Empty())
+                    using (var frame = new Mat())
                     {
-                        await UpdateUI(frame.ToBitmap(), mouse_picture);
+                        camera.Read(frame);
+                        if (!frame.Empty())
+                        {
+                            cameraFrameCount++;
+
+                            var bitmap = frame.ToBitmap();
+                            mouse_picture.Invoke(new Action(() =>
+                            {
+                                if (mouse_picture.Image != null)
+                                {
+                                    mouse_picture.Image.Dispose();
+                                }
+
+                                mouse_picture.Image = new Bitmap(bitmap);
+                                pictureBoxFrameCount++;
+                            }));
+                        }
                     }
                 }
             }
         }
 
-        // シリアル入力接続を管理する関数
+
+        // シリアル通信の設定と接続
         private bool Connect()
         {
             _Serial = new SerialPort
@@ -140,7 +231,6 @@ namespace ss2410
             return true;
         }
 
-        // シリアルデータを読み取る
         private void Serial_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
@@ -148,6 +238,8 @@ namespace ss2410
                 while (_Serial.BytesToRead > 0)
                 {
                     string data = _Serial.ReadLine();
+                    serialDataCount++;
+
                     string[] values = data.Split(',');
                     if (values.Length == 4)
                     {
@@ -156,7 +248,7 @@ namespace ss2410
                         float accY = float.Parse(values[2]);
                         float accZ = float.Parse(values[3]);
 
-                        
+                        ProcessDrawing(buttonA);
 
                         btnA.Add(buttonA);
                         accXValues.Add(accX);
@@ -178,8 +270,52 @@ namespace ss2410
             }
         }
 
-        // グラフを描画する関数
-        private async void Timer_Tick(object sender, EventArgs e)
+
+        private void ProcessDrawing(int buttonState)
+        {
+            if (!isMouseControlEnabled) return;
+
+            if (InvokeRequired)
+            {
+                Invoke(new Action<int>(ProcessDrawing), buttonState);
+                return;
+            }
+
+            if (buttonState == 1)
+            {
+                System.Drawing.Point currentPoint = GetMousePositionRelativeToControl(mouse_picture);
+
+                if (IsPointInPictureBox(currentPoint))
+                {
+                    if (!isDrawing)
+                    {
+                        isDrawing = true;
+                        drawingPoints.Clear();
+                    }
+                    drawingPoints.Add(currentPoint);
+                    mouse_picture.Invalidate(); // PaintLineをトリガー
+                }
+            }
+            else
+            {
+                isDrawing = false;
+            }
+        }
+
+        private System.Drawing.Point GetMousePositionRelativeToControl(PictureBox control)
+        {
+            System.Drawing.Point screenPoint = GetMousePosition();
+            System.Drawing.Point clientPoint = control.PointToClient(screenPoint);
+            return clientPoint;
+        }
+
+        private bool IsPointInPictureBox(System.Drawing.Point point)
+        {
+            return point.X >= 0 && point.X < mouse_picture.Width &&
+                   point.Y >= 0 && point.Y < mouse_picture.Height;
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
         {
             Bitmap bitmap = new Bitmap(slant_picture.Width, slant_picture.Height);
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -206,10 +342,9 @@ namespace ss2410
                     g.DrawLine(penZ, x1, y1Z, x2, y2Z);
                 }
             }
-            await UpdateUI(bitmap, slant_picture);
+            UpdateUI(bitmap, slant_picture);
         }
 
-        // マウスポイントを更新する関数
         private void UpdateMousePoint()
         {
             try
@@ -233,7 +368,7 @@ namespace ss2410
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Mouse update error: {ex.Message}");
+                Debug.WriteLine("Mouse update error: " + ex.Message);
             }
         }
 
@@ -256,7 +391,13 @@ namespace ss2410
             }
         }
 
-        // スクロールスピードを設定
+        private void button2_Click(object sender, EventArgs e)
+        {
+            drawingPoints.Clear();
+            mouse_picture.Invalidate();
+        }
+
+        // スクロールスピードのセッター
         public void SetScrollSpeed(float speed)
         {
             if (speed >= 0.1f && speed <= 5.0f)
@@ -265,14 +406,14 @@ namespace ss2410
             }
         }
 
-        // マウス位置を取得
-        public System.Drawing.Point GetMousePosition()
+        // マウスポインタの位置のゲッター
+        private System.Drawing.Point GetMousePosition()
         {
             return mousePoint;
         }
 
-        // UIを更新
-        private async Task UpdateUI(Bitmap bitmap, PictureBox pictureName)
+        // UIスレッドで画像を更新
+        private async void UpdateUI(Bitmap bitmap, PictureBox pictureName)
         {
             await Task.Run(() =>
             {
