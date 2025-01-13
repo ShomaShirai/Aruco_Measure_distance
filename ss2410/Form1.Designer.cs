@@ -33,8 +33,11 @@
             this.slant_picture = new System.Windows.Forms.PictureBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.mouse_picture)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.slant_picture)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             this.SuspendLayout();
             // 
             // mouse_picture
@@ -92,11 +95,35 @@
             this.label3.TabIndex = 4;
             this.label3.Text = "センサー値グラフ";
             // 
+            // trackBar1
+            // 
+            this.trackBar1.Location = new System.Drawing.Point(162, 580);
+            this.trackBar1.Maximum = 25;
+            this.trackBar1.Minimum = 5;
+            this.trackBar1.Name = "trackBar1";
+            this.trackBar1.Size = new System.Drawing.Size(154, 69);
+            this.trackBar1.TabIndex = 16;
+            this.trackBar1.TickStyle = System.Windows.Forms.TickStyle.Both;
+            this.trackBar1.Value = 15;
+            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("MS UI Gothic", 12F);
+            this.label4.Location = new System.Drawing.Point(36, 596);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(112, 24);
+            this.label4.TabIndex = 6;
+            this.label4.Text = "マウス感度";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1333, 675);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.trackBar1);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.slant_picture);
@@ -107,9 +134,9 @@
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.mouse_picture)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.slant_picture)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
 
         }
 
@@ -120,6 +147,8 @@
         private System.Windows.Forms.PictureBox slant_picture;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.Label label4;
     }
 }
 

@@ -28,11 +28,11 @@ namespace ss2410
         // 既存のフィールドに追加
         private const int MARKER_SIZE = 20;
         private System.Drawing.Point mousePoint;
-        private float scrollSpeed = 1.0f; // デフォルトのスクロールスピード
+        private float scrollSpeed; // デフォルトのスクロールスピード
         private Mat frame;
 
         // ダブルクリック検出用の変数
-        private const int DOUBLE_CLICK_INTERVAL = 800; // ミリ秒
+        private const int DOUBLE_CLICK_INTERVAL = 500; // ミリ秒
         private DateTime lastButtonPress = DateTime.MinValue;
         private bool isMouseControlEnabled = false;
 
@@ -74,6 +74,11 @@ namespace ss2410
                     UpdateMousePoint();
                 }
             };
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            SetScrollSpeed(trackBar1.Value / 10.0f);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -294,7 +299,8 @@ namespace ss2410
         {
             await Task.Run(() =>
             {
-                try {
+                try
+                {
                     pictureName.Invoke(new Action(() =>
                     {
                         if (pictureName.Image != null)
@@ -312,7 +318,7 @@ namespace ss2410
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                }                
+                }
             });
         }
     }
