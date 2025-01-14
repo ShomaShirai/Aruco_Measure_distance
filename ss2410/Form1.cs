@@ -61,6 +61,8 @@ namespace ss2410
             this.Text = "Aerial Mouse GUI";
             this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");    
 
+            this.Resize += Form1_Resize;
+
             // キーボードのqを押すことでウィンドウを閉じれるようにする
             this.KeyDown += Form1_KeyDown;
 
@@ -139,6 +141,25 @@ namespace ss2410
                 button3.Text = "シリアル通信OFF";
             }
         }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            // フォームの中央を計算
+            int centerX = this.ClientSize.Width / 2;
+
+            // PictureBox の幅を取得
+            int pictureWidth = mouse_picture.Width;
+
+            // mouse_picture の位置を設定（中央より左側）
+            mouse_picture.Location = new System.Drawing.Point(centerX - pictureWidth - 6, mouse_picture.Location.Y);
+
+            // slant_picture の位置を設定（中央より右側）
+            slant_picture.Location = new System.Drawing.Point(centerX + 6, slant_picture.Location.Y);
+
+            // PictureBox の幅を設定
+            mouse_picture.Width = slant_picture.Width = (this.ClientSize.Width - 100) / 2;
+        }
+
 
         private void FpsTimer_Tick(object sender, EventArgs e)
         {
