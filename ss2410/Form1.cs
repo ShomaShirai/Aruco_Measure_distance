@@ -79,10 +79,6 @@ namespace ss2410
             fpsTimer.Tick += FpsTimer_Tick;
             fpsTimer.Start();
 
-            // シリアル入力を開始する
-            
-            //isFirstConnect = false;
-
             // カメラを開始する
             Task.Run(() => ShotImage());
 
