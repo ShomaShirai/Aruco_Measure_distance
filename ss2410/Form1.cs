@@ -49,12 +49,17 @@ namespace ss2410
         private int serialDataCount = 0;
         private Stopwatch stopwatch = new Stopwatch();
 
+        // ボート番号とボーレートを受け取るパラメータ
+        private string portNameFromCombobox;
+        private int baudRateFromComboBox;
+        private bool isFirstConnect = true;
+
         public Form1()
         {
             InitializeComponent();
             this.FormClosing += Form1_FormClosing;
             this.Text = "Aerial Mouse GUI";
-            this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");
+            this.Icon = new Icon("C:\\Users\\takos\\source\\repos\\ss2410\\ss2410\\endo.ico");    
 
             // キーボードのqを押すことでウィンドウを閉じれるようにする
             this.KeyDown += Form1_KeyDown;
@@ -72,15 +77,16 @@ namespace ss2410
             fpsTimer.Tick += FpsTimer_Tick;
             fpsTimer.Start();
 
-            // カメラを開始する
-            Task.Run(() => ShotImage());
-
             // シリアル入力を開始する
             bool isConnect = Connect();
             if (!isConnect)
             {
                 MessageBox.Show("Failed to connect to serial port", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            isFirstConnect = false;
+
+            // カメラを開始する
+            Task.Run(() => ShotImage());
 
             // マウスポイントの初期化
             mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
@@ -99,6 +105,34 @@ namespace ss2410
             SetScrollSpeed(trackBar1.Value / 10.0f);
         }
 
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (_Serial != null)
+            {
+                if (_Serial.IsOpen)
+                {
+                    // シリアル通信が開いている場合は閉じる
+                    _Serial.Close();
+                    button3.Text = "接続";
+                    label7.Text = "センサ : OFF";
+                }
+                else
+                {
+                    // シリアル通信が閉じている場合は開く
+                    try
+                    {
+                        _Serial.Open();
+                        button3.Text = "切断";
+                        label7.Text = "センサ : ON";
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"シリアルポートの接続に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
         private void FpsTimer_Tick(object sender, EventArgs e)
         {
             // 経過時間を取得
@@ -110,9 +144,9 @@ namespace ss2410
             double serialHz = serialDataCount / elapsedSeconds;
 
             // ラベルの更新
-            label6.Text = $"Camera FPS: {cameraFps:F2}";
-            label5.Text = $"Display FPS: {pictureBoxFps:F2}";
-            label7.Text = $"Serial Hz: {serialHz:F2}";
+            label6.Text = $"カメラ : {cameraFps:F2}FPS";
+            label5.Text = $"表示 : {pictureBoxFps:F2}FPS";
+            label7.Text = $"センサ : {serialHz:F2}Hz";
 
             // カウントのリセット
             cameraFrameCount = 0;
@@ -204,10 +238,17 @@ namespace ss2410
         // シリアル通信の設定と接続
         private bool Connect()
         {
+            // ポート番号とボーレートをComboBoxから取得
+            portNameFromCombobox = comboBox1.SelectedItem?.ToString();
+            if (int.TryParse(comboBox2.SelectedItem?.ToString(), out int bandRateFromComboBox))
+            {
+                baudRateFromComboBox = bandRateFromComboBox;
+            }
+
             _Serial = new SerialPort
             {
-                PortName = "COM11",
-                BaudRate = 115200,
+                PortName = portNameFromCombobox,
+                BaudRate = baudRateFromComboBox,
                 DataBits = 8,
                 Parity = Parity.None,
                 StopBits = StopBits.One,
@@ -438,6 +479,26 @@ namespace ss2410
                     Debug.WriteLine(ex.Message);
                 }
             });
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label6_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label7_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
