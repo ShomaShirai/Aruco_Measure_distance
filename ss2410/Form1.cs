@@ -78,12 +78,8 @@ namespace ss2410
             fpsTimer.Start();
 
             // シリアル入力を開始する
-            bool isConnect = Connect();
-            if (!isConnect)
-            {
-                MessageBox.Show("Failed to connect to serial port", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            isFirstConnect = false;
+            
+            //isFirstConnect = false;
 
             // カメラを開始する
             Task.Run(() => ShotImage());
@@ -113,23 +109,34 @@ namespace ss2410
                 {
                     // シリアル通信が開いている場合は閉じる
                     _Serial.Close();
-                    button3.Text = "接続";
-                    label7.Text = "センサ : OFF";
+                    button3.Text = "シリアル通信ON";
                 }
                 else
                 {
                     // シリアル通信が閉じている場合は開く
                     try
                     {
-                        _Serial.Open();
-                        button3.Text = "切断";
-                        label7.Text = "センサ : ON";
+                        bool isConnect = Connect();
+                        if (!isConnect)
+                        {
+                            MessageBox.Show("Failed to connect to serial port", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        button3.Text = "シリアル通信OFF";
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show($"シリアルポートの接続に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
+            }
+            else
+            {
+                bool isConnect = Connect();
+                if (!isConnect)
+                {
+                    MessageBox.Show("Failed to connect to serial port", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                button3.Text = "シリアル通信OFF";
             }
         }
 
@@ -416,20 +423,23 @@ namespace ss2410
         // ボタンを押した際の空中マウスの有効/無効化
         private void button1_Click(object sender, EventArgs e)
         {
-            isMouseControlEnabled = !isMouseControlEnabled;
-            Debug.WriteLine($"Mouse control enabled: {isMouseControlEnabled}");
-
-            button1.Text = isMouseControlEnabled ? "空中マウス OFF" : "空中マウス ON";
-
-            string status = isMouseControlEnabled ? "有効" : "無効";
-            this.Text = $"Aerial Mouse GUI - マウス制御: {status}";
-            label1.Text = isMouseControlEnabled ? "空中マウスが有効中．ボタンを押して無効にできます．カメラ画像に青線を描画できます" : "空中マウスが無効．ボタンを押して有効にできます";
-
-            if (isMouseControlEnabled)
+            if (_Serial.IsOpen)
             {
-                mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
-                SetCursorPos(mousePoint.X, mousePoint.Y);
-            }
+                isMouseControlEnabled = !isMouseControlEnabled;
+                Debug.WriteLine($"Mouse control enabled: {isMouseControlEnabled}");
+
+                button1.Text = isMouseControlEnabled ? "空中マウス OFF" : "空中マウス ON";
+
+                string status = isMouseControlEnabled ? "有効" : "無効";
+                this.Text = $"Aerial Mouse GUI - マウス制御: {status}";
+                label1.Text = isMouseControlEnabled ? "空中マウスが有効中．ボタンを押して無効にできます．カメラ画像に青線を描画できます" : "空中マウスが無効．ボタンを押して有効にできます";
+
+                if (isMouseControlEnabled)
+                {
+                    mousePoint = new System.Drawing.Point(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
+                    SetCursorPos(mousePoint.X, mousePoint.Y);
+                }
+            }            
         }
 
         private void button2_Click(object sender, EventArgs e)
