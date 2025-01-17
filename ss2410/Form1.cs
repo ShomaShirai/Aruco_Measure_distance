@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenCvSharp;
@@ -258,17 +255,9 @@ namespace ss2410
                             cameraFrameCount++;
 
                             var bitmap = frame.ToBitmap();
-                            mouse_picture.Invoke(new Action(() =>
-                            {
-                                if (mouse_picture.Image != null)
-                                {
-                                    mouse_picture.Image.Dispose();
-                                }
-
-                                mouse_picture.Image = new Bitmap(bitmap);
-                                pictureBoxFrameCount++;
-                            }));
-                        }
+                            await UpdateUI(bitmap, mouse_picture);
+                            pictureBoxFrameCount++;
+                        };
                     }
                 }
             }
@@ -396,7 +385,7 @@ namespace ss2410
                    point.Y >= 0 && point.Y < mouse_picture.Height;
         }
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private async void Timer_Tick(object sender, EventArgs e)
         {
             Bitmap bitmap = new Bitmap(slant_picture.Width, slant_picture.Height);
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -423,7 +412,7 @@ namespace ss2410
                     g.DrawLine(penZ, x1, y1Z, x2, y2Z);
                 }
             }
-            UpdateUI(bitmap, slant_picture);
+            await UpdateUI(bitmap, slant_picture);
         }
 
         private void UpdateMousePoint()
@@ -497,7 +486,7 @@ namespace ss2410
         }
 
         // UIスレッドで画像を更新
-        private async void UpdateUI(Bitmap bitmap, PictureBox pictureName)
+        private async Task UpdateUI(Bitmap bitmap, PictureBox pictureName)
         {
             await Task.Run(() =>
             {
