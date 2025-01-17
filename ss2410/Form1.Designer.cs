@@ -74,9 +74,9 @@
             this.label1.Location = new System.Drawing.Point(18, 15);
             this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(529, 30);
+            this.label1.Size = new System.Drawing.Size(839, 45);
             this.label1.TabIndex = 1;
-            this.label1.Text = "ボタンを押すことで空中マウスを起動できます";
+            this.label1.Text = "[シリアル通信ON]を押して通信を開始できます\r\n";
             // 
             // slant_picture
             // 
@@ -107,11 +107,11 @@
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("MS UI Gothic", 12F);
-            this.label3.Location = new System.Drawing.Point(861, 75);
+            this.label3.Location = new System.Drawing.Point(702, 72);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(163, 24);
+            this.label3.Size = new System.Drawing.Size(476, 24);
             this.label3.TabIndex = 4;
-            this.label3.Text = "センサー値グラフ";
+            this.label3.Text = "センサー値グラフ(青:Z成分，赤:x成分，緑:y成分)";
             // 
             // trackBar1
             // 
